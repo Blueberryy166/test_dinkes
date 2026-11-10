@@ -6,11 +6,11 @@
   <title>Admin Dashboard - Dinas Kesehatan</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- PapaParse untuk membaca CSV Google Sheets -->
+  <!-- PapaParse untuk membaca & mengekspor CSV Google Sheets -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
   <style>
-    /* Styling khusus saat mencetak agar hanya tabel rekap yang tercetak rapi */
+    /* Format cetak / Print ke PDF agar rapi ber-kop dinas */
     @media print {
       body {
         background-color: white !important;
@@ -132,7 +132,7 @@
           <p class="text-xs text-slate-500 mt-1">Tautan ini ditampilkan langsung di halaman publik tamu saat scan QR.</p>
         </div>
 
-        <!-- Form Tambah / Edit Tautan -->
+        <!-- Formulir Tambah / Edit Tautan -->
         <form id="form-tambah-link" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
           <div class="flex justify-between items-center">
             <h3 id="form-title" class="font-bold text-slate-800 text-sm uppercase tracking-wider">Tambah Tautan Layanan Baru</h3>
@@ -144,7 +144,7 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label class="text-xs text-slate-500 font-bold block mb-1">Judul Layanan / Dokumen</label>
-              <input type="text" id="link-judul" placeholder="Contoh: Form Buku Tamu / SOTK 2026" required class="border border-slate-200 p-2.5 w-full rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
+              <input type="text" id="link-judul" placeholder="Contoh: Form Buku Tamu / SOTK Dinkes" required class="border border-slate-200 p-2.5 w-full rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
             </div>
             <div>
               <label class="text-xs text-slate-500 font-bold block mb-1">Kategori</label>
@@ -168,7 +168,7 @@
           </div>
         </form>
 
-        <!-- Tabel Daftar Tautan -->
+        <!-- Tabel Tautan Aktif -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div class="p-4 border-b border-slate-100 flex justify-between items-center">
             <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Daftar Tautan Aktif</h3>
@@ -194,19 +194,28 @@
       <!-- ================= TAB 2: REKAP BUKU TAMU ================= -->
       <section id="panel-rekap" class="hidden space-y-6 max-w-6xl mx-auto">
         
-        <!-- Header Rekap & Tombol Aksi -->
+        <!-- Header & Action Buttons -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 class="text-2xl font-black text-slate-900">Rekapitulasi Buku Tamu</h2>
-            <p class="text-xs text-slate-500 mt-1">Data sinkronisasi dari tanggapan Google Form Dinas Kesehatan.</p>
+            <p class="text-xs text-slate-500 mt-1">Data tersinkronisasi otomatis dari Google Spreadsheet.</p>
           </div>
           <div class="flex items-center gap-2 no-print">
+            <!-- Ekspor CSV -->
+            <button onclick="unduhDataCSV()" class="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Ekspor CSV
+            </button>
+            <!-- Cetak PDF -->
             <button onclick="window.print()" class="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-sm">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
               </svg>
               Cetak / PDF
             </button>
+            <!-- Sinkron Data -->
             <button onclick="ambilDataGoogleSheet()" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-sm shadow-emerald-200">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -218,22 +227,28 @@
 
         <!-- Filter, Cari, & Sort Toolbar -->
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3 no-print">
-          <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+          <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
             <!-- Pencarian Teks Bebas -->
             <div class="md:col-span-2">
               <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Cari Kata Kunci</label>
               <input type="text" id="input-cari-tamu" onkeyup="terapkanFilterDanSort()" placeholder="Ketik nama, instansi, atau keterangan..." class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
             </div>
-            
-            <!-- Filter Tanggal / Bulan / Tahun -->
+
+            <!-- Tanggal Mulai -->
             <div>
-              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Filter Tanggal</label>
-              <input type="date" id="input-filter-tanggal" onchange="terapkanFilterDanSort()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Dari Tanggal</label>
+              <input type="date" id="input-tgl-mulai" onchange="terapkanFilterDanSort()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+
+            <!-- Tanggal Selesai -->
+            <div>
+              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Sampai Tanggal</label>
+              <input type="date" id="input-tgl-selesai" onchange="terapkanFilterDanSort()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
             </div>
 
             <!-- Sort Kolom -->
             <div>
-              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Urutkan Berdasarkan</label>
+              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Urutkan Kolom</label>
               <select id="select-sort-kolom" onchange="terapkanFilterDanSort()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
                 <option value="default">Waktu Terkini (Bawaan)</option>
               </select>
@@ -251,11 +266,11 @@
 
           <div class="flex justify-between items-center pt-2 border-t border-slate-100 text-xs">
             <span id="info-total-tamu" class="text-slate-500 font-medium">Memuat data...</span>
-            <button onclick="resetFilter()" class="text-emerald-700 font-bold hover:underline">Reset Pengurutan</button>
+            <button onclick="resetFilter()" class="text-emerald-700 font-bold hover:underline">Reset Filter & Sort</button>
           </div>
         </div>
 
-        <!-- Kop Surat Saat Cetak -->
+        <!-- Kop Surat Dokumen (Khusus Saat Cetak / PDF) -->
         <div class="hidden print:block text-center mb-6">
           <h1 class="text-lg font-bold uppercase tracking-wide">Pemerintah Kabupaten / Kota</h1>
           <h2 class="text-xl font-black uppercase">Dinas Kesehatan</h2>
@@ -263,12 +278,12 @@
           <hr class="border-slate-800 border-t-2 mt-3">
         </div>
 
-        <!-- Tabel Rekap Respon -->
+        <!-- Tabel Rekap Respon Tamu -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print-area">
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs border-collapse">
               <thead id="tabel-head-tamu" class="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider">
-                <!-- Kolom otomatis mengikuti Google Form -->
+                <!-- Kolom otomatis menyesuaikan pertanyaan di Google Form -->
               </thead>
               <tbody id="tabel-body-tamu" class="divide-y divide-slate-100">
                 <tr><td colspan="6" class="p-8 text-center text-slate-400">Tekan tombol "Sinkron Data" untuk memuat respon Google Form.</td></tr>
@@ -330,10 +345,13 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // 2. LINK CSV GOOGLE SPREADSHEET HASIL "PUBLISH TO WEB"
+    // 2. TAUTAN CSV GOOGLE SPREADSHEET (PUBLISH TO WEB)
     const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQwbNwfOvTvPQUk_QmmQerrnmg4Zwe4WpdZ9iRfNawFfqUHLSnWMWErGbyTsm8Vx2F26bhvOO2hyc6Y/pub?output=csv";
 
-    // Sesi Login
+    // 3. TAUTAN GOOGLE APPS SCRIPT WEB APP UNTUK HAPUS PERMANEN
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxu1GkqMDIL1qJlRoJXmPiZSS0lCqWJaKhfVl_qH1PKVX1tQcTgrKAW6qJOkDHjmnKI/exec";
+
+    // Listener Sesi Login
     onAuthStateChanged(auth, (user) => {
       if (user) {
         document.getElementById("auth-box").classList.add("hidden");
@@ -346,6 +364,7 @@
       }
     });
 
+    // Proses Login
     document.getElementById("form-login").addEventListener("submit", async (e) => {
       e.preventDefault();
       const email = document.getElementById("login-email").value;
@@ -361,11 +380,12 @@
       }
     });
 
+    // Logout
     document.getElementById("btn-logout").addEventListener("click", () => {
       signOut(auth);
     });
 
-    // --- BAGIAN 1: KELOLA TAUTAN (FIRESTORE) + EDIT FITUR ---
+    // --- BAGIAN 1: KELOLA TAUTAN (FIRESTORE) ---
     let daftarLinkMemory = [];
 
     async function muatDataLinks() {
@@ -380,7 +400,7 @@
         daftarLinkMemory = [];
 
         if (snapshot.empty) {
-          tabel.innerHTML = "<tr><td colspan='4' class='p-6 text-center text-slate-400'>Belum ada tautan. Silakan tambahkan formulir di atas.</td></tr>";
+          tabel.innerHTML = "<tr><td colspan='4' class='p-6 text-center text-slate-400'>Belum ada tautan. Silakan tambahkan melalui formulir di atas.</td></tr>";
           return;
         }
 
@@ -409,7 +429,7 @@
       }
     }
 
-    // Fungsi Mulai Edit (Isi Form)
+    // Mengisi form saat tombol Edit diklik
     window.mulaiEditLink = function(id) {
       const target = daftarLinkMemory.find(item => item.id === id);
       if (!target) return;
@@ -424,7 +444,6 @@
       document.getElementById("btn-submit-link").innerText = "Simpan Perubahan";
       document.getElementById("btn-batal-edit").classList.remove("hidden");
 
-      // Scroll halus ke formulir
       document.getElementById("form-tambah-link").scrollIntoView({ behavior: 'smooth' });
     };
 
@@ -436,7 +455,7 @@
       document.getElementById("btn-batal-edit").classList.add("hidden");
     };
 
-    // Form Tambah / Update Submit
+    // Simpan Baru / Update Tautan
     document.getElementById("form-tambah-link").addEventListener("submit", async (e) => {
       e.preventDefault();
       const docId = document.getElementById("link-doc-id").value;
@@ -447,11 +466,9 @@
 
       try {
         if (docId) {
-          // Mode UPDATE
           await updateDoc(doc(db, "links", docId), { judul, kategori, url, urutan });
           alert("Tautan berhasil diperbarui!");
         } else {
-          // Mode TAMBAH BARU
           await addDoc(collection(db, "links"), { judul, kategori, url, urutan });
         }
         window.batalEdit();
@@ -461,7 +478,7 @@
       }
     });
 
-    // Hapus Link
+    // Hapus Tautan dari Firestore
     window.hapusLink = async function(id) {
       if (confirm("Hapus tautan ini?")) {
         try {
@@ -473,9 +490,10 @@
       }
     };
 
-    // --- BAGIAN 2: REKAP BUKU TAMU DENGAN FILTER & SORT ---
+    // --- BAGIAN 2: REKAP BUKU TAMU (GOOGLE SHEETS) ---
     let dataTamuMentah = [];
     let headerTamu = [];
+    let dataTamuTampil = [];
 
     window.ambilDataGoogleSheet = function() {
       const infoTotal = document.getElementById("info-total-tamu");
@@ -486,7 +504,7 @@
           <tr>
             <td colspan="6" class="p-8 text-center text-amber-800 bg-amber-50">
               <b>Link CSV belum diatur!</b><br>
-              Masukkan tautan CSV Google Sheets ke variabel <code>CSV_URL</code> di dalam script file ini.
+              Masukkan tautan CSV Google Sheets ke variabel <code>CSV_URL</code> di dalam skrip file ini.
             </td>
           </tr>
         `;
@@ -503,12 +521,16 @@
         complete: function(results) {
           if (results.data && results.data.length > 0) {
             headerTamu = results.meta.fields;
-            dataTamuMentah = results.data;
             
-            // Perbarui opsi sorting kolom
-            isiDropdownSort(headerTamu);
+            // Catat nomor baris fisik asli spreadsheet (baris 1 = header, data mulai baris 2)
+            dataTamuMentah = results.data.map((row, idx) => {
+              return {
+                ...row,
+                _sheetRowNumber: idx + 2
+              };
+            });
 
-            // Terapkan render awal
+            isiDropdownSort(headerTamu);
             terapkanFilterDanSort();
           } else {
             tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400">Belum ada respon tamu di Google Form.</td></tr>`;
@@ -529,37 +551,74 @@
       });
     }
 
-    // Fungsi Gabungan: Filter Keyword + Sorting Dinamis
+    // Filter Kata Kunci + Tanggal + Sorting
     window.terapkanFilterDanSort = function() {
       const keyword = (document.getElementById("input-cari-tamu").value || "").toLowerCase();
       const sortCol = document.getElementById("select-sort-kolom").value;
       const sortArah = document.getElementById("select-sort-arah").value;
+      // Ambil nilai rentang tanggal
+      const tglMulaiVal = document.getElementById("input-tgl-mulai").value;
+      const tglSelesaiVal = document.getElementById("input-tgl-selesai").value;
 
-      // 1. Filter Pencarian & Tanggal
-      const tglPilihan = document.getElementById("input-filter-tanggal").value; // Format: YYYY-MM-DD
-      let tglFilterRegex = null;
-      if (tglPilihan) {
-        const [tahun, bulan, hari] = tglPilihan.split("-");
-        // Cocokkan berbagai format penulisan Google Form (DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD)
-        tglFilterRegex = new RegExp(`(${hari}[/-]${bulan}[/-]${tahun})|(${bulan}[/-]${hari}[/-]${tahun})|(${tahun}[/-]${bulan}[/-]${hari})`);
+      const tglMulai = tglMulaiVal ? new Date(tglMulaiVal + "T00:00:00") : null;
+      const tglSelesai = tglSelesaiVal ? new Date(tglSelesaiVal + "T23:59:59") : null;
+
+      // Fungsi bantuan mengekstrak objek Date dari teks kolom respon Google Form
+      function ekstrakTanggalRow(row) {
+        const teks = Object.keys(row)
+          .filter(k => k !== '_sheetRowNumber')
+          .map(k => String(row[k]))
+          .join(" ");
+
+        // Cocokkan pola: DD/MM/YYYY, MM/DD/YYYY, atau YYYY-MM-DD
+        const match = teks.match(/(\d{1,4})[/-](\d{1,2})[/-](\d{1,4})/);
+        if (!match) return null;
+
+        let [_, p1, p2, p3] = match;
+        let d, m, y;
+        if (p1.length === 4) {
+          y = parseInt(p1); m = parseInt(p2) - 1; d = parseInt(p3);
+        } else if (p3.length === 4) {
+          d = parseInt(p1); m = parseInt(p2) - 1; y = parseInt(p3);
+        } else {
+          return null;
+        }
+
+        const dateObj = new Date(y, m, d);
+        return isNaN(dateObj.getTime()) ? null : dateObj;
       }
 
+      // Filter Data
       let hasil = dataTamuMentah.filter(row => {
-        const cocokKeyword = Object.values(row).some(val => String(val).toLowerCase().includes(keyword));
-        const cocokTanggal = !tglFilterRegex || Object.values(row).some(val => tglFilterRegex.test(String(val)));
-        return cocokKeyword && cocokTanggal;
+        const valuesWithoutInternal = Object.keys(row)
+          .filter(k => k !== '_sheetRowNumber')
+          .map(k => row[k]);
+
+        const cocokKeyword = valuesWithoutInternal.some(val => String(val).toLowerCase().includes(keyword));
+
+        // Pengecekan rentang tanggal
+        let cocokRentang = true;
+        if (tglMulai || tglSelesai) {
+          const rowDate = ekstrakTanggalRow(row);
+          if (rowDate) {
+            if (tglMulai && rowDate < tglMulai) cocokRentang = false;
+            if (tglSelesai && rowDate > tglSelesai) cocokRentang = false;
+          } else {
+            cocokRentang = false;
+          }
+        }
+
+        return cocokKeyword && cocokRentang;
       });
 
-      // 2. Sorting
+      // Sortir
       if (sortCol === "default") {
-        // Balik urutan: respons terbaru di posisi teratas
         hasil = sortArah === "desc" ? [...hasil].reverse() : [...hasil];
       } else {
         hasil.sort((a, b) => {
           const valA = (a[sortCol] || "").toString().toLowerCase();
           const valB = (b[sortCol] || "").toString().toLowerCase();
 
-          // Deteksi apakah nilai berupa angka
           const numA = parseFloat(valA);
           const numB = parseFloat(valB);
 
@@ -573,18 +632,22 @@
         });
       }
 
+      dataTamuTampil = hasil;
       renderTabelTamu(hasil);
       document.getElementById("info-total-tamu").innerText = `Menampilkan ${hasil.length} dari total ${dataTamuMentah.length} pengunjung`;
     };
 
+    // Reset Parameter Filter & Sort
     window.resetFilter = function() {
-      document.getElementById("input-filter-tanggal").value = "";
       document.getElementById("input-cari-tamu").value = "";
+      document.getElementById("input-tgl-mulai").value = "";
+      document.getElementById("input-tgl-selesai").value = "";
       document.getElementById("select-sort-kolom").value = "default";
       document.getElementById("select-sort-arah").value = "desc";
       terapkanFilterDanSort();
     };
 
+    // Render Tabel Respons Tamu
     function renderTabelTamu(data) {
       const thead = document.getElementById("tabel-head-tamu");
       const tbody = document.getElementById("tabel-body-tamu");
@@ -595,11 +658,12 @@
       headerTamu.forEach(col => {
         trHead.innerHTML += `<th class="p-3.5 whitespace-nowrap">${col}</th>`;
       });
+      trHead.innerHTML += `<th class="p-3.5 text-center no-print w-24">Aksi</th>`;
       thead.appendChild(trHead);
 
       tbody.innerHTML = "";
       if (data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${headerTamu.length + 1}" class="p-6 text-center text-slate-400">Tidak ada data yang cocok dengan kriteria.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${headerTamu.length + 2}" class="p-6 text-center text-slate-400">Tidak ada data yang cocok dengan kriteria.</td></tr>`;
         return;
       }
 
@@ -610,10 +674,90 @@
         headerTamu.forEach(col => {
           barisHtml += `<td class="p-3.5 text-slate-700 whitespace-nowrap">${row[col] || "-"}</td>`;
         });
+        
+        // Tombol Hapus Permanen ke Google Apps Script
+        barisHtml += `
+          <td class="p-3.5 text-center no-print">
+            <button id="btn-del-${row._sheetRowNumber}" onclick="window.hapusPermanenSheet(${row._sheetRowNumber})" title="Hapus permanen dari Google Sheet" class="text-rose-600 hover:text-rose-800 font-bold text-xs bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-lg transition">
+              Hapus
+            </button>
+          </td>
+        `;
         tr.innerHTML = barisHtml;
         tbody.appendChild(tr);
       });
     }
+
+    // Ekspor Data ke File CSV
+    window.unduhDataCSV = function() {
+      const dataSumber = (dataTamuTampil.length > 0) ? dataTamuTampil : dataTamuMentah;
+      if (!dataSumber || dataSumber.length === 0) {
+        alert("Tidak ada data tamu untuk diekspor.");
+        return;
+      }
+
+      // Bersihkan properti internal '_sheetRowNumber' sebelum diunduh
+      const dataBersih = dataSumber.map(item => {
+        const duplikat = { ...item };
+        delete duplikat._sheetRowNumber;
+        return duplikat;
+      });
+
+      const csvString = Papa.unparse(dataBersih);
+      const blob = new Blob(["\uFEFF" + csvString], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+
+      const tgl = new Date().toISOString().slice(0, 10);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Rekap_Tamu_Dinkes_${tgl}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+
+    // Fungsi HAPUS PERMANEN Langsung di Google Spreadsheet
+    window.hapusPermanenSheet = async function(barisSheet) {
+      if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("PASTE_URL_APPS_SCRIPT")) {
+        alert("URL Apps Script belum diisi! Silakan deploy script Apps Script terlebih dahulu.");
+        return;
+      }
+
+      if (!confirm(`PERINGATAN: Apakah Anda yakin ingin menghapus data baris ke-${barisSheet} ini secara PERMANEN dari Google Spreadsheet?`)) {
+        return;
+      }
+
+      const btn = document.getElementById(`btn-del-${barisSheet}`);
+      if (btn) {
+        btn.innerText = "Menghapus...";
+        btn.disabled = true;
+      }
+
+      try {
+        // Kirim permintaan hapus ke Web App Google Apps Script
+        const urlEndpoint = `${APPS_SCRIPT_URL}?action=delete&row=${barisSheet}`;
+        
+        // Memakai mode: 'no-cors' agar request sukses dikirim tanpa kendala CORS browser
+        await fetch(urlEndpoint, {
+          method: "GET",
+          mode: "no-cors"
+        });
+
+        alert("Permintaan hapus terkirim ke server Google Spreadsheet!");
+
+        // Beri jeda 1 detik agar Google selesai memperbarui lembar kerja, lalu sinkronkan ulang tabel
+        setTimeout(() => {
+          window.ambilDataGoogleSheet();
+        }, 1200);
+
+      } catch (err) {
+        alert("Gagal menghapus baris di Google Sheets: " + err.message);
+        if (btn) {
+          btn.innerText = "Hapus";
+          btn.disabled = false;
+        }
+      }
+    };
   </script>
 </body>
 </html>
