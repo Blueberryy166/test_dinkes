@@ -3,96 +3,319 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Panel - Dinas Kesehatan</title>
+  <title>Admin Dashboard - Dinas Kesehatan</title>
+  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 min-h-screen p-6">
-  <div class="max-w-2xl mx-auto">
+  <!-- PapaParse untuk membaca CSV Google Sheets -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
-    <!-- Form Login Admin Resmi -->
-    <div id="auth-box" class="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 max-w-sm mx-auto mt-16">
-      <h2 class="text-xl font-bold text-gray-800 text-center mb-1">Masuk Admin</h2>
-      <p class="text-xs text-gray-500 text-center mb-6">Gunakan akun admin terdaftar</p>
+  <style>
+    /* Styling khusus saat mencetak agar hanya tabel rekap yang tercetak rapi */
+    @media print {
+      body {
+        background-color: white !important;
+        padding: 0 !important;
+      }
+      aside, #auth-box, #btn-tab-links, #btn-tab-rekap, .no-print {
+        display: none !important;
+      }
+      main {
+        padding: 0 !important;
+        overflow: visible !important;
+      }
+      #panel-rekap {
+        display: block !important;
+      }
+      #panel-links {
+        display: none !important;
+      }
+      .print-area {
+        border: none !important;
+        box-shadow: none !important;
+      }
+      table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+      }
+      th, td {
+        border: 1px solid #cbd5e1 !important;
+        padding: 6px 8px !important;
+        font-size: 10px !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 font-sans">
+
+  <!-- ================= LAYAR LOGIN ================= -->
+  <div id="auth-box" class="flex min-h-screen items-center justify-center p-4">
+    <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 max-w-sm w-full">
+      <div class="w-12 h-12 bg-emerald-600 text-white rounded-xl mx-auto flex items-center justify-center mb-4 shadow-sm shadow-emerald-200">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+        </svg>
+      </div>
+      <h2 class="text-xl font-black text-slate-900 text-center mb-1">Admin Dinkes</h2>
+      <p class="text-xs text-slate-500 text-center mb-6">Masuk untuk mengelola portal & buku tamu</p>
       
       <form id="form-login" class="space-y-4">
         <div>
-          <label class="text-xs font-bold text-gray-600 block mb-1">Email</label>
-          <input type="email" id="login-email" placeholder="admin@dinkes.go.id" required class="w-full border p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+          <label class="text-xs font-bold text-slate-600 block mb-1">Email</label>
+          <input type="email" id="login-email" placeholder="admin@dinkes.go.id" required class="w-full border border-slate-200 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
         </div>
         <div>
-          <label class="text-xs font-bold text-gray-600 block mb-1">Kata Sandi</label>
-          <input type="password" id="login-password" placeholder="••••••••" required class="w-full border p-2.5 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+          <label class="text-xs font-bold text-slate-600 block mb-1">Kata Sandi</label>
+          <input type="password" id="login-password" placeholder="••••••••" required class="w-full border border-slate-200 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
         </div>
-        <p id="login-error" class="text-xs text-red-600 hidden"></p>
-        <button type="submit" id="btn-submit-login" class="w-full bg-emerald-600 text-white py-2.5 rounded-lg font-bold hover:bg-emerald-700 transition">Masuk</button>
+        <p id="login-error" class="text-xs text-rose-600 hidden font-medium"></p>
+        <button type="submit" class="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition shadow-sm shadow-emerald-200">Masuk</button>
       </form>
     </div>
-
-    <!-- Dashboard Konten (Hanya terbuka jika akun terverifikasi) -->
-    <div id="admin-content" class="hidden space-y-6">
-      <div class="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-        <div>
-          <h1 class="text-lg font-bold text-gray-800">Kelola Tautan & Kearsipan</h1>
-          <p id="user-display" class="text-xs text-gray-500"></p>
-        </div>
-        <div class="space-x-2">
-          <a href="index.html" target="_blank" class="text-xs text-blue-600 hover:underline">Lihat Publik →</a>
-          <button id="btn-logout" class="text-xs bg-red-100 text-red-700 px-3 py-1.5 rounded-lg font-semibold hover:bg-red-200">Keluar</button>
-        </div>
-      </div>
-
-      <!-- Form Tambah Link -->
-      <form id="form-tambah" class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 space-y-4">
-        <h2 class="font-bold text-gray-700 text-sm uppercase tracking-wide">Tambah Tautan Layanan</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="text-xs text-gray-500 font-bold block mb-1">Judul Layanan</label>
-            <input type="text" id="judul" placeholder="Contoh: Form Buku Tamu" required class="border p-2 w-full rounded text-sm">
-          </div>
-          <div>
-            <label class="text-xs text-gray-500 font-bold block mb-1">Kategori</label>
-            <input type="text" id="kategori" placeholder="Contoh: Layanan / Kearsipan / Regulasi" class="border p-2 w-full rounded text-sm">
-          </div>
-        </div>
-        <div>
-          <label class="text-xs text-gray-500 font-bold block mb-1">URL / Link Target (Google Form / Drive / Web)</label>
-          <input type="url" id="url" placeholder="https://..." required class="border p-2 w-full rounded text-sm">
-        </div>
-        <div>
-          <label class="text-xs text-gray-500 font-bold block mb-1">Nomor Urutan Tampil</label>
-          <input type="number" id="urutan" value="1" class="border p-2 w-32 rounded text-sm">
-        </div>
-        <button type="submit" class="bg-emerald-600 text-white px-5 py-2 rounded-lg font-semibold text-sm hover:bg-emerald-700">Simpan Tautan</button>
-      </form>
-
-      <!-- Tabel Daftar Link -->
-      <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
-        <h2 class="font-bold text-gray-700 mb-4 text-sm uppercase tracking-wide">Daftar Link Aktif</h2>
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-sm text-gray-600">
-            <thead class="border-b bg-gray-50 text-gray-700">
-              <tr>
-                <th class="p-3">Urut</th>
-                <th class="p-3">Judul & Kategori</th>
-                <th class="p-3">URL</th>
-                <th class="p-3 text-center">Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="tabel-link">
-              <tr><td colspan="4" class="p-3 text-center text-gray-400">Memuat data...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
   </div>
 
+  <!-- ================= DASHBOARD UTAMA ================= -->
+  <div id="admin-content" class="hidden min-h-screen flex flex-col md:flex-row">
+    
+    <!-- SIDEBAR -->
+    <aside class="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col justify-between shrink-0 shadow-lg no-print">
+      <div>
+        <div class="p-6 border-b border-slate-800 flex items-center space-x-3">
+          <div class="w-9 h-9 bg-emerald-600 rounded-xl flex items-center justify-center text-white font-black text-base shrink-0">
+            +
+          </div>
+          <div class="truncate">
+            <h1 class="font-extrabold text-white text-sm tracking-wide">DINKES ADMIN</h1>
+            <p id="user-display" class="text-[11px] text-slate-400 truncate mt-0.5">Memuat akun...</p>
+          </div>
+        </div>
+
+        <nav class="p-4 space-y-1.5">
+          <button id="btn-tab-links" onclick="gantiTab('links')" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-white bg-emerald-600 shadow-sm shadow-emerald-900/40">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+            <span>Kelola Tautan & SOTK</span>
+          </button>
+
+          <button id="btn-tab-rekap" onclick="gantiTab('rekap')" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white hover:bg-slate-800">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>Rekap Buku Tamu</span>
+          </button>
+        </nav>
+      </div>
+
+      <div class="p-4 border-t border-slate-800 space-y-2">
+        <a href="index.html" target="_blank" class="w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 transition">
+          <span>Lihat Halaman Tamu</span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        </a>
+        <button id="btn-logout" class="w-full flex items-center justify-center space-x-2 px-3 py-2 rounded-xl text-xs font-semibold text-rose-400 hover:bg-rose-950/40 transition">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+          </svg>
+          <span>Keluar Sesi</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- AREA KONTEN -->
+    <main class="flex-1 p-6 md:p-10 overflow-y-auto">
+
+      <!-- ================= TAB 1: KELOLA TAUTAN ================= -->
+      <section id="panel-links" class="space-y-6 max-w-5xl mx-auto">
+        <div>
+          <h2 class="text-2xl font-black text-slate-900">Kelola Tautan & Kearsipan</h2>
+          <p class="text-xs text-slate-500 mt-1">Tautan ini ditampilkan langsung di halaman publik tamu saat scan QR.</p>
+        </div>
+
+        <!-- Form Tambah / Edit Tautan -->
+        <form id="form-tambah-link" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+          <div class="flex justify-between items-center">
+            <h3 id="form-title" class="font-bold text-slate-800 text-sm uppercase tracking-wider">Tambah Tautan Layanan Baru</h3>
+            <button type="button" id="btn-batal-edit" onclick="batalEdit()" class="hidden text-xs text-rose-600 font-bold hover:underline">Batal Edit</button>
+          </div>
+          
+          <input type="hidden" id="link-doc-id" value="">
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs text-slate-500 font-bold block mb-1">Judul Layanan / Dokumen</label>
+              <input type="text" id="link-judul" placeholder="Contoh: Form Buku Tamu / SOTK 2026" required class="border border-slate-200 p-2.5 w-full rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+            <div>
+              <label class="text-xs text-slate-500 font-bold block mb-1">Kategori</label>
+              <input type="text" id="link-kategori" placeholder="Contoh: Layanan / Kearsipan / Regulasi" class="border border-slate-200 p-2.5 w-full rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+          </div>
+          <div>
+            <label class="text-xs text-slate-500 font-bold block mb-1">URL Target (Google Drive / Form / Website)</label>
+            <input type="url" id="link-url" placeholder="https://..." required class="border border-slate-200 p-2.5 w-full rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
+          </div>
+          <div class="flex items-center space-x-3">
+            <div>
+              <label class="text-xs text-slate-500 font-bold block mb-1">Nomor Urutan</label>
+              <input type="number" id="link-urutan" value="1" class="border border-slate-200 p-2.5 w-28 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+            <div class="pt-5">
+              <button type="submit" id="btn-submit-link" class="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-sm shadow-emerald-200 transition">
+                + Simpan Tautan
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <!-- Tabel Daftar Tautan -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="p-4 border-b border-slate-100 flex justify-between items-center">
+            <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Daftar Tautan Aktif</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-600">
+              <thead class="border-b bg-slate-50 text-slate-700 font-bold uppercase tracking-wider">
+                <tr>
+                  <th class="p-3.5 pl-5 w-16">Urut</th>
+                  <th class="p-3.5">Judul & Kategori</th>
+                  <th class="p-3.5">URL Target</th>
+                  <th class="p-3.5 text-center w-36">Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="tabel-link" class="divide-y divide-slate-100">
+                <tr><td colspan="4" class="p-6 text-center text-slate-400">Memuat daftar tautan...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 2: REKAP BUKU TAMU ================= -->
+      <section id="panel-rekap" class="hidden space-y-6 max-w-6xl mx-auto">
+        
+        <!-- Header Rekap & Tombol Aksi -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl font-black text-slate-900">Rekapitulasi Buku Tamu</h2>
+            <p class="text-xs text-slate-500 mt-1">Data sinkronisasi dari tanggapan Google Form Dinas Kesehatan.</p>
+          </div>
+          <div class="flex items-center gap-2 no-print">
+            <button onclick="window.print()" class="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+              </svg>
+              Cetak / PDF
+            </button>
+            <button onclick="ambilDataGoogleSheet()" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-sm shadow-emerald-200">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Sinkron Data
+            </button>
+          </div>
+        </div>
+
+        <!-- Filter, Cari, & Sort Toolbar -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3 no-print">
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <!-- Pencarian Teks Bebas -->
+            <div class="md:col-span-2">
+              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Cari Kata Kunci</label>
+              <input type="text" id="input-cari-tamu" onkeyup="terapkanFilterDanSort()" placeholder="Ketik nama, instansi, atau keterangan..." class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+            
+            <!-- Filter Tanggal / Bulan / Tahun -->
+            <div>
+              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Filter Tanggal</label>
+              <input type="date" id="input-filter-tanggal" onchange="terapkanFilterDanSort()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+
+            <!-- Sort Kolom -->
+            <div>
+              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Urutkan Berdasarkan</label>
+              <select id="select-sort-kolom" onchange="terapkanFilterDanSort()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+                <option value="default">Waktu Terkini (Bawaan)</option>
+              </select>
+            </div>
+
+            <!-- Arah Sort -->
+            <div>
+              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Arah Urutan</label>
+              <select id="select-sort-arah" onchange="terapkanFilterDanSort()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+                <option value="desc">Terbaru / Z-A (Menurun)</option>
+                <option value="asc">Terlama / A-Z (Menaik)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex justify-between items-center pt-2 border-t border-slate-100 text-xs">
+            <span id="info-total-tamu" class="text-slate-500 font-medium">Memuat data...</span>
+            <button onclick="resetFilter()" class="text-emerald-700 font-bold hover:underline">Reset Pengurutan</button>
+          </div>
+        </div>
+
+        <!-- Kop Surat Saat Cetak -->
+        <div class="hidden print:block text-center mb-6">
+          <h1 class="text-lg font-bold uppercase tracking-wide">Pemerintah Kabupaten / Kota</h1>
+          <h2 class="text-xl font-black uppercase">Dinas Kesehatan</h2>
+          <p class="text-xs text-slate-600 mt-1">Laporan Rekapitulasi Kunjungan Tamu & Akses Mandiri</p>
+          <hr class="border-slate-800 border-t-2 mt-3">
+        </div>
+
+        <!-- Tabel Rekap Respon -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print-area">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead id="tabel-head-tamu" class="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider">
+                <!-- Kolom otomatis mengikuti Google Form -->
+              </thead>
+              <tbody id="tabel-body-tamu" class="divide-y divide-slate-100">
+                <tr><td colspan="6" class="p-8 text-center text-slate-400">Tekan tombol "Sinkron Data" untuk memuat respon Google Form.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- SCRIPT NAVIGASI TAB (UI) -->
+  <script>
+    function gantiTab(tab) {
+      const panelLinks = document.getElementById("panel-links");
+      const panelRekap = document.getElementById("panel-rekap");
+      const btnLinks = document.getElementById("btn-tab-links");
+      const btnRekap = document.getElementById("btn-tab-rekap");
+
+      if (tab === "links") {
+        panelLinks.classList.remove("hidden");
+        panelRekap.classList.add("hidden");
+
+        btnLinks.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-white bg-emerald-600 shadow-sm shadow-emerald-900/40";
+        btnRekap.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white hover:bg-slate-800";
+      } else {
+        panelLinks.classList.add("hidden");
+        panelRekap.classList.remove("hidden");
+
+        btnRekap.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-white bg-emerald-600 shadow-sm shadow-emerald-900/40";
+        btnLinks.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white hover:bg-slate-800";
+
+        if (typeof window.ambilDataGoogleSheet === "function") {
+          window.ambilDataGoogleSheet();
+        }
+      }
+    }
+  </script>
+
+  <!-- FIREBASE INTEGRATION & LOGIKA DATA -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, updateDoc, getDocs, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+    // 1. KONFIGURASI FIREBASE ANDA
     const firebaseConfig = {
       apiKey: "AIzaSyAf4oRUliv3bcDkD2t4REgojJ48dIz_1ts",
       authDomain: "test-dinkes.firebaseapp.com",
@@ -107,20 +330,22 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // Pantau status login pengguna
+    // 2. LINK CSV GOOGLE SPREADSHEET HASIL "PUBLISH TO WEB"
+    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQwbNwfOvTvPQUk_QmmQerrnmg4Zwe4WpdZ9iRfNawFfqUHLSnWMWErGbyTsm8Vx2F26bhvOO2hyc6Y/pub?output=csv";
+
+    // Sesi Login
     onAuthStateChanged(auth, (user) => {
       if (user) {
         document.getElementById("auth-box").classList.add("hidden");
         document.getElementById("admin-content").classList.remove("hidden");
-        document.getElementById("user-display").innerText = `Login sebagai: ${user.email}`;
-        muatData();
+        document.getElementById("user-display").innerText = user.email;
+        muatDataLinks();
       } else {
         document.getElementById("auth-box").classList.remove("hidden");
         document.getElementById("admin-content").classList.add("hidden");
       }
     });
 
-    // Proses Login
     document.getElementById("form-login").addEventListener("submit", async (e) => {
       e.preventDefault();
       const email = document.getElementById("login-email").value;
@@ -131,81 +356,264 @@
       try {
         await signInWithEmailAndPassword(auth, email, pass);
       } catch (err) {
-        errBox.innerText = "Email atau kata sandi salah.";
+        errBox.innerText = "Email atau kata sandi tidak valid.";
         errBox.classList.remove("hidden");
       }
     });
 
-    // Proses Logout
     document.getElementById("btn-logout").addEventListener("click", () => {
       signOut(auth);
     });
 
-    // Ambil Data Link
-    async function muatData() {
+    // --- BAGIAN 1: KELOLA TAUTAN (FIRESTORE) + EDIT FITUR ---
+    let daftarLinkMemory = [];
+
+    async function muatDataLinks() {
       const tabel = document.getElementById("tabel-link");
-      tabel.innerHTML = "<tr><td colspan='4' class='p-3 text-center'>Memuat data...</td></tr>";
+      tabel.innerHTML = "<tr><td colspan='4' class='p-4 text-center text-slate-400'>Memuat daftar tautan...</td></tr>";
 
       try {
         const q = query(collection(db, "links"), orderBy("urutan", "asc"));
         const snapshot = await getDocs(q);
 
         tabel.innerHTML = "";
+        daftarLinkMemory = [];
+
         if (snapshot.empty) {
-          tabel.innerHTML = "<tr><td colspan='4' class='p-3 text-center text-gray-400'>Belum ada tautan yang disimpan.</td></tr>";
+          tabel.innerHTML = "<tr><td colspan='4' class='p-6 text-center text-slate-400'>Belum ada tautan. Silakan tambahkan formulir di atas.</td></tr>";
           return;
         }
 
         snapshot.forEach((dokumen) => {
           const item = dokumen.data();
+          daftarLinkMemory.push({ id: dokumen.id, ...item });
+
           const tr = document.createElement("tr");
-          tr.className = "border-b hover:bg-gray-50";
+          tr.className = "hover:bg-slate-50 transition";
           tr.innerHTML = `
-            <td class="p-3 font-semibold">${item.urutan || 0}</td>
-            <td class="p-3">
-              <div class="font-bold text-gray-800">${item.judul}</div>
-              <span class="text-xs bg-gray-200 px-2 py-0.5 rounded text-gray-700">${item.kategori || '-'}</span>
+            <td class="p-3.5 pl-5 font-bold text-slate-500">${item.urutan || 0}</td>
+            <td class="p-3.5">
+              <div class="font-bold text-slate-800">${item.judul}</div>
+              <span class="inline-block text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-semibold">${item.kategori || '-'}</span>
             </td>
-            <td class="p-3 truncate max-w-xs text-blue-500">${item.url}</td>
-            <td class="p-3 text-center">
-              <button onclick="window.hapusLink('${dokumen.id}')" class="text-red-600 hover:text-red-800 font-semibold text-xs">Hapus</button>
+            <td class="p-3.5 truncate max-w-xs text-emerald-600 font-mono text-[11px]">${item.url}</td>
+            <td class="p-3.5 text-center space-x-1.5 whitespace-nowrap">
+              <button onclick="window.mulaiEditLink('${dokumen.id}')" class="text-amber-700 hover:text-amber-800 font-bold text-xs bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-lg transition">Edit</button>
+              <button onclick="window.hapusLink('${dokumen.id}')" class="text-rose-600 hover:text-rose-800 font-bold text-xs bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-lg transition">Hapus</button>
             </td>
           `;
           tabel.appendChild(tr);
         });
-      } catch (e) {
-        tabel.innerHTML = `<tr><td colspan='4' class='p-3 text-center text-red-500'>Akses ditolak: ${e.message}</td></tr>`;
+      } catch (err) {
+        tabel.innerHTML = `<tr><td colspan='4' class='p-4 text-center text-rose-500'>Akses ditolak atau Firestore Rules belum diatur.</td></tr>`;
       }
     }
 
-    // Tambah Data
-    document.getElementById("form-tambah").addEventListener("submit", async (e) => {
+    // Fungsi Mulai Edit (Isi Form)
+    window.mulaiEditLink = function(id) {
+      const target = daftarLinkMemory.find(item => item.id === id);
+      if (!target) return;
+
+      document.getElementById("link-doc-id").value = target.id;
+      document.getElementById("link-judul").value = target.judul || "";
+      document.getElementById("link-kategori").value = target.kategori || "";
+      document.getElementById("link-url").value = target.url || "";
+      document.getElementById("link-urutan").value = target.urutan || 1;
+
+      document.getElementById("form-title").innerText = "Edit Tautan Layanan";
+      document.getElementById("btn-submit-link").innerText = "Simpan Perubahan";
+      document.getElementById("btn-batal-edit").classList.remove("hidden");
+
+      // Scroll halus ke formulir
+      document.getElementById("form-tambah-link").scrollIntoView({ behavior: 'smooth' });
+    };
+
+    window.batalEdit = function() {
+      document.getElementById("form-tambah-link").reset();
+      document.getElementById("link-doc-id").value = "";
+      document.getElementById("form-title").innerText = "Tambah Tautan Layanan Baru";
+      document.getElementById("btn-submit-link").innerText = "+ Simpan Tautan";
+      document.getElementById("btn-batal-edit").classList.add("hidden");
+    };
+
+    // Form Tambah / Update Submit
+    document.getElementById("form-tambah-link").addEventListener("submit", async (e) => {
       e.preventDefault();
-      const judul = document.getElementById("judul").value;
-      const kategori = document.getElementById("kategori").value;
-      const url = document.getElementById("url").value;
-      const urutan = parseInt(document.getElementById("urutan").value, 10) || 1;
+      const docId = document.getElementById("link-doc-id").value;
+      const judul = document.getElementById("link-judul").value;
+      const kategori = document.getElementById("link-kategori").value;
+      const url = document.getElementById("link-url").value;
+      const urutan = parseInt(document.getElementById("link-urutan").value, 10) || 1;
 
       try {
-        await addDoc(collection(db, "links"), { judul, kategori, url, urutan });
-        document.getElementById("form-tambah").reset();
-        muatData();
+        if (docId) {
+          // Mode UPDATE
+          await updateDoc(doc(db, "links", docId), { judul, kategori, url, urutan });
+          alert("Tautan berhasil diperbarui!");
+        } else {
+          // Mode TAMBAH BARU
+          await addDoc(collection(db, "links"), { judul, kategori, url, urutan });
+        }
+        window.batalEdit();
+        muatDataLinks();
       } catch (err) {
-        alert("Gagal menyimpan data: Pastikan akun Anda memiliki izin.");
+        alert("Gagal menyimpan data: " + err.message);
       }
     });
 
-    // Hapus Data
+    // Hapus Link
     window.hapusLink = async function(id) {
       if (confirm("Hapus tautan ini?")) {
         try {
           await deleteDoc(doc(db, "links", id));
-          muatData();
+          muatDataLinks();
         } catch (err) {
           alert("Gagal menghapus tautan.");
         }
       }
     };
+
+    // --- BAGIAN 2: REKAP BUKU TAMU DENGAN FILTER & SORT ---
+    let dataTamuMentah = [];
+    let headerTamu = [];
+
+    window.ambilDataGoogleSheet = function() {
+      const infoTotal = document.getElementById("info-total-tamu");
+      const tbody = document.getElementById("tabel-body-tamu");
+
+      if (CSV_URL.includes("PASTE_LINK_CSV")) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="p-8 text-center text-amber-800 bg-amber-50">
+              <b>Link CSV belum diatur!</b><br>
+              Masukkan tautan CSV Google Sheets ke variabel <code>CSV_URL</code> di dalam script file ini.
+            </td>
+          </tr>
+        `;
+        infoTotal.innerText = "Konfigurasi CSV belum selesai";
+        return;
+      }
+
+      infoTotal.innerText = "Mengambil data tanggapan...";
+
+      Papa.parse(CSV_URL, {
+        download: true,
+        header: true,
+        skipEmptyLines: true,
+        complete: function(results) {
+          if (results.data && results.data.length > 0) {
+            headerTamu = results.meta.fields;
+            dataTamuMentah = results.data;
+            
+            // Perbarui opsi sorting kolom
+            isiDropdownSort(headerTamu);
+
+            // Terapkan render awal
+            terapkanFilterDanSort();
+          } else {
+            tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400">Belum ada respon tamu di Google Form.</td></tr>`;
+            infoTotal.innerText = "0 data";
+          }
+        },
+        error: function(err) {
+          tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-rose-600 bg-rose-50">Gagal mengunduh CSV. Pastikan opsi 'Publikasikan ke web' diatur ke CSV.</td></tr>`;
+        }
+      });
+    };
+
+    function isiDropdownSort(kolom) {
+      const select = document.getElementById("select-sort-kolom");
+      select.innerHTML = `<option value="default">Waktu Terkini (Bawaan)</option>`;
+      kolom.forEach(col => {
+        select.innerHTML += `<option value="${col}">${col}</option>`;
+      });
+    }
+
+    // Fungsi Gabungan: Filter Keyword + Sorting Dinamis
+    window.terapkanFilterDanSort = function() {
+      const keyword = (document.getElementById("input-cari-tamu").value || "").toLowerCase();
+      const sortCol = document.getElementById("select-sort-kolom").value;
+      const sortArah = document.getElementById("select-sort-arah").value;
+
+      // 1. Filter Pencarian & Tanggal
+      const tglPilihan = document.getElementById("input-filter-tanggal").value; // Format: YYYY-MM-DD
+      let tglFilterRegex = null;
+      if (tglPilihan) {
+        const [tahun, bulan, hari] = tglPilihan.split("-");
+        // Cocokkan berbagai format penulisan Google Form (DD/MM/YYYY, MM/DD/YYYY, YYYY-MM-DD)
+        tglFilterRegex = new RegExp(`(${hari}[/-]${bulan}[/-]${tahun})|(${bulan}[/-]${hari}[/-]${tahun})|(${tahun}[/-]${bulan}[/-]${hari})`);
+      }
+
+      let hasil = dataTamuMentah.filter(row => {
+        const cocokKeyword = Object.values(row).some(val => String(val).toLowerCase().includes(keyword));
+        const cocokTanggal = !tglFilterRegex || Object.values(row).some(val => tglFilterRegex.test(String(val)));
+        return cocokKeyword && cocokTanggal;
+      });
+
+      // 2. Sorting
+      if (sortCol === "default") {
+        // Balik urutan: respons terbaru di posisi teratas
+        hasil = sortArah === "desc" ? [...hasil].reverse() : [...hasil];
+      } else {
+        hasil.sort((a, b) => {
+          const valA = (a[sortCol] || "").toString().toLowerCase();
+          const valB = (b[sortCol] || "").toString().toLowerCase();
+
+          // Deteksi apakah nilai berupa angka
+          const numA = parseFloat(valA);
+          const numB = parseFloat(valB);
+
+          if (!isNaN(numA) && !isNaN(numB)) {
+            return sortArah === "asc" ? numA - numB : numB - numA;
+          }
+
+          if (valA < valB) return sortArah === "asc" ? -1 : 1;
+          if (valA > valB) return sortArah === "asc" ? 1 : -1;
+          return 0;
+        });
+      }
+
+      renderTabelTamu(hasil);
+      document.getElementById("info-total-tamu").innerText = `Menampilkan ${hasil.length} dari total ${dataTamuMentah.length} pengunjung`;
+    };
+
+    window.resetFilter = function() {
+      document.getElementById("input-filter-tanggal").value = "";
+      document.getElementById("input-cari-tamu").value = "";
+      document.getElementById("select-sort-kolom").value = "default";
+      document.getElementById("select-sort-arah").value = "desc";
+      terapkanFilterDanSort();
+    };
+
+    function renderTabelTamu(data) {
+      const thead = document.getElementById("tabel-head-tamu");
+      const tbody = document.getElementById("tabel-body-tamu");
+
+      thead.innerHTML = "";
+      const trHead = document.createElement("tr");
+      trHead.innerHTML = `<th class="p-3.5 pl-5 w-12 text-slate-400">No</th>`;
+      headerTamu.forEach(col => {
+        trHead.innerHTML += `<th class="p-3.5 whitespace-nowrap">${col}</th>`;
+      });
+      thead.appendChild(trHead);
+
+      tbody.innerHTML = "";
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${headerTamu.length + 1}" class="p-6 text-center text-slate-400">Tidak ada data yang cocok dengan kriteria.</td></tr>`;
+        return;
+      }
+
+      data.forEach((row, index) => {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 transition";
+        let barisHtml = `<td class="p-3.5 pl-5 font-bold text-slate-400">${index + 1}</td>`;
+        headerTamu.forEach(col => {
+          barisHtml += `<td class="p-3.5 text-slate-700 whitespace-nowrap">${row[col] || "-"}</td>`;
+        });
+        tr.innerHTML = barisHtml;
+        tbody.appendChild(tr);
+      });
+    }
   </script>
 </body>
 </html>
