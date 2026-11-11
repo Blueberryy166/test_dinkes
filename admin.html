@@ -4,44 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - Dinas Kesehatan</title>
-  <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- PapaParse untuk membaca & mengekspor CSV Google Sheets -->
+  <!-- PapaParse untuk ekspor CSV -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
   <style>
-    /* Format cetak / Print ke PDF agar rapi ber-kop dinas */
     @media print {
-      body {
-        background-color: white !important;
-        padding: 0 !important;
-      }
-      aside, #auth-box, #btn-tab-links, #btn-tab-rekap, .no-print {
-        display: none !important;
-      }
-      main {
-        padding: 0 !important;
-        overflow: visible !important;
-      }
-      #panel-rekap {
-        display: block !important;
-      }
-      #panel-links {
-        display: none !important;
-      }
-      .print-area {
-        border: none !important;
-        box-shadow: none !important;
-      }
-      table {
-        width: 100% !important;
-        border-collapse: collapse !important;
-      }
-      th, td {
-        border: 1px solid #cbd5e1 !important;
-        padding: 6px 8px !important;
-        font-size: 10px !important;
-      }
+      body { background-color: white !important; padding: 0 !important; }
+      aside, #auth-box, #btn-tab-links, #btn-tab-rekap, .no-print { display: none !important; }
+      main { padding: 0 !important; overflow: visible !important; }
+      #panel-rekap { display: block !important; }
+      #panel-links { display: none !important; }
+      .print-area { border: none !important; box-shadow: none !important; }
+      table { width: 100% !important; border-collapse: collapse !important; }
+      th, td { border: 1px solid #cbd5e1 !important; padding: 6px 8px !important; font-size: 10px !important; }
     }
   </style>
 </head>
@@ -66,9 +42,10 @@
         <div>
           <label class="text-xs font-bold text-slate-600 block mb-1">Kata Sandi</label>
           <input type="password" id="login-password" placeholder="••••••••" required class="w-full border border-slate-200 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+          <span class="text-[10px] text-slate-400 mt-1 block">Kata sandi berfungsi ganda sebagai token otorisasi database.</span>
         </div>
         <p id="login-error" class="text-xs text-rose-600 hidden font-medium"></p>
-        <button type="submit" class="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition shadow-sm shadow-emerald-200">Masuk</button>
+        <button type="submit" id="btn-submit-login" class="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition shadow-sm shadow-emerald-200">Masuk</button>
       </form>
     </div>
   </div>
@@ -80,8 +57,12 @@
     <aside class="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col justify-between shrink-0 shadow-lg no-print">
       <div>
         <div class="p-6 border-b border-slate-800 flex items-center space-x-3">
-          <div class="w-9 h-9 bg-emerald-600 rounded-xl flex items-center justify-center text-white font-black text-base shrink-0">
-            +
+          <div class="w-9 h-9 bg-emerald-600 rounded-lg flex items-center justify-center text-white font-black text-base shrink-0 overflow-hidden">
+            <img
+              src="https://upload.wikimedia.org/wikipedia/commons/c/c3/Lambang_Kabupaten_Cirebon.gif"
+              alt="Logo Dinas Kesehatan"
+              class="w-full h-full object-contain rounded-lg"
+            >
           </div>
           <div class="truncate">
             <h1 class="font-extrabold text-white text-sm tracking-wide">DINKES ADMIN</h1>
@@ -125,14 +106,13 @@
     <!-- AREA KONTEN -->
     <main class="flex-1 p-6 md:p-10 overflow-y-auto">
 
-      <!-- ================= TAB 1: KELOLA TAUTAN ================= -->
+      <!-- TAB 1: KELOLA TAUTAN -->
       <section id="panel-links" class="space-y-6 max-w-5xl mx-auto">
         <div>
           <h2 class="text-2xl font-black text-slate-900">Kelola Tautan & Kearsipan</h2>
           <p class="text-xs text-slate-500 mt-1">Tautan ini ditampilkan langsung di halaman publik tamu saat scan QR.</p>
         </div>
 
-        <!-- Formulir Tambah / Edit Tautan -->
         <form id="form-tambah-link" class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
           <div class="flex justify-between items-center">
             <h3 id="form-title" class="font-bold text-slate-800 text-sm uppercase tracking-wider">Tambah Tautan Layanan Baru</h3>
@@ -155,6 +135,11 @@
             <label class="text-xs text-slate-500 font-bold block mb-1">URL Target (Google Drive / Form / Website)</label>
             <input type="url" id="link-url" placeholder="https://..." required class="border border-slate-200 p-2.5 w-full rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
           </div>
+          <div>
+            <label class="text-xs text-slate-500 font-bold block mb-1">URL Gambar / Thumbnail Link (Opsional)</label>
+            <input type="url" id="link-icon" placeholder="Contoh: https://i.imgur.com/... atau file lokal (img/icon.png)" class="border border-slate-200 p-2.5 w-full rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
+            <span class="text-[10px] text-slate-400 mt-0.5 block">Kosongkan jika ingin memakai simbol/ikon default.</span>
+          </div>
           <div class="flex items-center space-x-3">
             <div>
               <label class="text-xs text-slate-500 font-bold block mb-1">Nomor Urutan</label>
@@ -168,7 +153,6 @@
           </div>
         </form>
 
-        <!-- Tabel Tautan Aktif -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
           <div class="p-4 border-b border-slate-100 flex justify-between items-center">
             <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Daftar Tautan Aktif</h3>
@@ -191,31 +175,41 @@
         </div>
       </section>
 
-      <!-- ================= TAB 2: REKAP BUKU TAMU ================= -->
+      <!-- TAB 2: REKAP BUKU TAMU -->
       <section id="panel-rekap" class="hidden space-y-6 max-w-6xl mx-auto">
-        
-        <!-- Header & Action Buttons -->
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 class="text-2xl font-black text-slate-900">Rekapitulasi Buku Tamu</h2>
             <p class="text-xs text-slate-500 mt-1">Data tersinkronisasi otomatis dari Google Spreadsheet.</p>
           </div>
           <div class="flex items-center gap-2 no-print">
-            <!-- Ekspor CSV -->
+            <button onclick="window.open('https://docs.google.com/forms/d/e/1FAIpQLScrjn0XQ6OY5SUnVq9Q3s-At8vAmKuv5ISizImqsh4cG-dk6A/viewform?usp=sharing&ouid=101797940776861939861', '_blank')"
+              class="inline-flex items-center gap-2 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg"
+                  class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 3h-3.18A3 3 0 0 0 13 1h-2a3 3 0 0 0-2.82 2H5a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM11 3h2a1 1 0 0 1 0 2h-2a1 1 0 0 1 0-2zm7 16H6v-2h12v2zm0-4H6v-2h12v2zm-8-4H6V9h4v2zm8 0h-6V9h6v2z"/>
+              </svg>
+              Google Forms
+            </button> 
+            <button onclick="window.open('https://docs.google.com/spreadsheets/d/1AnQCfBsqaX1LOZLsBd4pPkc3q4tiQD1EiB4wOVXjXxo/edit?usp=sharing', '_blank')"
+                class="inline-flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 2H5a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM8 18H5v-3h3v3zm0-5H5v-3h3v3zm0-5H5V5h3v3zm5 10h-3v-3h3v3zm0-5h-3v-3h3v3zm0-5h-3V5h3v3zm6 10h-4v-3h4v3zm0-5h-4v-3h4v3zm0-5h-4V5h4v3z"/>
+                </svg>
+                Google Spreadsheets
+            </button>
             <button onclick="unduhDataCSV()" class="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition shadow-sm">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
               Ekspor CSV
             </button>
-            <!-- Cetak PDF -->
             <button onclick="window.print()" class="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-sm">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
               </svg>
               Cetak / PDF
             </button>
-            <!-- Sinkron Data -->
             <button onclick="ambilDataGoogleSheet()" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-sm shadow-emerald-200">
               <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -225,28 +219,23 @@
           </div>
         </div>
 
-        <!-- Filter, Cari, & Sort Toolbar -->
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3 no-print">
           <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
-            <!-- Pencarian Teks Bebas -->
             <div class="md:col-span-2">
               <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Cari Kata Kunci</label>
               <input type="text" id="input-cari-tamu" onkeyup="terapkanFilterDanSort()" placeholder="Ketik nama, instansi, atau keterangan..." class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
             </div>
 
-            <!-- Tanggal Mulai -->
             <div>
               <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Dari Tanggal</label>
               <input type="date" id="input-tgl-mulai" onchange="terapkanFilterDanSort()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
             </div>
 
-            <!-- Tanggal Selesai -->
             <div>
               <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Sampai Tanggal</label>
               <input type="date" id="input-tgl-selesai" onchange="terapkanFilterDanSort()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
             </div>
 
-            <!-- Sort Kolom -->
             <div>
               <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Urutkan Kolom</label>
               <select id="select-sort-kolom" onchange="terapkanFilterDanSort()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
@@ -254,7 +243,6 @@
               </select>
             </div>
 
-            <!-- Arah Sort -->
             <div>
               <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Arah Urutan</label>
               <select id="select-sort-arah" onchange="terapkanFilterDanSort()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
@@ -264,31 +252,63 @@
             </div>
           </div>
 
-          <div class="flex justify-between items-center pt-2 border-t border-slate-100 text-xs">
-            <span id="info-total-tamu" class="text-slate-500 font-medium">Memuat data...</span>
-            <button onclick="resetFilter()" class="text-emerald-700 font-bold hover:underline">Reset Filter & Sort</button>
+          <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div class="flex items-center gap-2">
+              <label class="text-slate-500 font-semibold">Tampilkan per halaman:</label>
+              <select id="select-page-size" onchange="ubahPageSize()" class="border border-slate-200 rounded-lg px-2.5 py-1 text-xs bg-white outline-none focus:ring-1 focus:ring-emerald-500">
+                <option value="10">10 baris</option>
+                <option value="25" selected>25 baris</option>
+                <option value="50">50 baris</option>
+                <option value="all">Semua</option>
+              </select>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <button onclick="resetFilter()" class="text-emerald-700 font-bold hover:underline">Reset Filter & Sort</button>
+              
+              <div class="relative">
+                <button type="button" onclick="toggleDropdownKolom()" class="border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-xl font-bold flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                  </svg>
+                  Atur Kolom Tampil
+                </button>
+
+                <div id="dropdown-kolom" class="hidden absolute right-0 mt-2 w-64 bg-white border border-slate-200 shadow-xl rounded-2xl p-3 z-30 space-y-2 max-h-60 overflow-y-auto">
+                  <div class="flex justify-between items-center pb-1 border-b border-slate-100">
+                    <span class="text-[11px] font-bold text-slate-600">Pilih Kolom:</span>
+                    <button type="button" onclick="centangSemuaKolom(true)" class="text-[10px] text-emerald-600 font-bold hover:underline">Semua</button>
+                  </div>
+                  <div id="list-checkbox-kolom" class="space-y-1.5"></div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Kop Surat Dokumen (Khusus Saat Cetak / PDF) -->
         <div class="hidden print:block text-center mb-6">
-          <h1 class="text-lg font-bold uppercase tracking-wide">Pemerintah Kabupaten / Kota</h1>
+          <h1 class="text-lg font-bold uppercase tracking-wide">Pemerintah Kabupaten Cirebon</h1>
           <h2 class="text-xl font-black uppercase">Dinas Kesehatan</h2>
           <p class="text-xs text-slate-600 mt-1">Laporan Rekapitulasi Kunjungan Tamu & Akses Mandiri</p>
           <hr class="border-slate-800 border-t-2 mt-3">
         </div>
 
-        <!-- Tabel Rekap Respon Tamu -->
         <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print-area">
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xs border-collapse">
-              <thead id="tabel-head-tamu" class="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider">
-                <!-- Kolom otomatis menyesuaikan pertanyaan di Google Form -->
-              </thead>
+              <thead id="tabel-head-tamu" class="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider"></thead>
               <tbody id="tabel-body-tamu" class="divide-y divide-slate-100">
                 <tr><td colspan="6" class="p-8 text-center text-slate-400">Tekan tombol "Sinkron Data" untuk memuat respon Google Form.</td></tr>
               </tbody>
             </table>
+          </div>
+        </div>
+
+        <div id="pagination-bar" class="flex items-center justify-between px-4 py-3 bg-white rounded-2xl border border-slate-200 text-xs no-print">
+          <span id="page-info" class="text-slate-500 font-medium">Halaman 1 dari 1</span>
+          <div class="flex items-center gap-1.5">
+            <button onclick="pindahHalaman(-1)" id="btn-prev-page" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 font-bold disabled:opacity-40">Sebelumnya</button>
+            <button onclick="pindahHalaman(1)" id="btn-next-page" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 font-bold disabled:opacity-40">Selanjutnya</button>
           </div>
         </div>
       </section>
@@ -296,7 +316,6 @@
     </main>
   </div>
 
-  <!-- SCRIPT NAVIGASI TAB (UI) -->
   <script>
     function gantiTab(tab) {
       const panelLinks = document.getElementById("panel-links");
@@ -307,13 +326,11 @@
       if (tab === "links") {
         panelLinks.classList.remove("hidden");
         panelRekap.classList.add("hidden");
-
         btnLinks.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-white bg-emerald-600 shadow-sm shadow-emerald-900/40";
         btnRekap.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white hover:bg-slate-800";
       } else {
         panelLinks.classList.add("hidden");
         panelRekap.classList.remove("hidden");
-
         btnRekap.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-white bg-emerald-600 shadow-sm shadow-emerald-900/40";
         btnLinks.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white hover:bg-slate-800";
 
@@ -327,10 +344,16 @@
   <!-- FIREBASE INTEGRATION & LOGIKA DATA -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { 
+      getAuth, 
+      signInWithEmailAndPassword, 
+      signOut, 
+      onAuthStateChanged,
+      setPersistence, 
+      browserSessionPersistence 
+    } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getFirestore, collection, addDoc, updateDoc, getDocs, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // 1. KONFIGURASI FIREBASE ANDA
     const firebaseConfig = {
       apiKey: "AIzaSyAf4oRUliv3bcDkD2t4REgojJ48dIz_1ts",
       authDomain: "test-dinkes.firebaseapp.com",
@@ -345,13 +368,12 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // 2. TAUTAN CSV GOOGLE SPREADSHEET (PUBLISH TO WEB)
-    const CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQwbNwfOvTvPQUk_QmmQerrnmg4Zwe4WpdZ9iRfNawFfqUHLSnWMWErGbyTsm8Vx2F26bhvOO2hyc6Y/pub?output=csv";
+    setPersistence(auth, browserSessionPersistence);
 
-    // 3. TAUTAN GOOGLE APPS SCRIPT WEB APP UNTUK HAPUS PERMANEN
+    // ID SPREADSHEET DARI LINK RESMI ANDA
+    const SPREADSHEET_ID = "1AnQCfBsqaX1LOZLsBd4pPkc3q4tiQD1EiB4wOVXjXxo";
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxu1GkqMDIL1qJlRoJXmPiZSS0lCqWJaKhfVl_qH1PKVX1tQcTgrKAW6qJOkDHjmnKI/exec";
 
-    // Listener Sesi Login
     onAuthStateChanged(auth, (user) => {
       if (user) {
         document.getElementById("auth-box").classList.add("hidden");
@@ -361,31 +383,43 @@
       } else {
         document.getElementById("auth-box").classList.remove("hidden");
         document.getElementById("admin-content").classList.add("hidden");
+        sessionStorage.removeItem("dinkes_auth_token");
       }
     });
 
-    // Proses Login
     document.getElementById("form-login").addEventListener("submit", async (e) => {
       e.preventDefault();
       const email = document.getElementById("login-email").value;
       const pass = document.getElementById("login-password").value;
       const errBox = document.getElementById("login-error");
+      const btn = document.getElementById("btn-submit-login");
 
       errBox.classList.add("hidden");
+      btn.innerText = "Memverifikasi...";
+      btn.disabled = true;
+
       try {
+        await setPersistence(auth, browserSessionPersistence);
         await signInWithEmailAndPassword(auth, email, pass);
+        sessionStorage.setItem("dinkes_auth_token", pass);
+        document.getElementById("login-password").value = "";
       } catch (err) {
         errBox.innerText = "Email atau kata sandi tidak valid.";
         errBox.classList.remove("hidden");
+      } finally {
+        btn.innerText = "Masuk";
+        btn.disabled = false;
       }
     });
 
-    // Logout
     document.getElementById("btn-logout").addEventListener("click", () => {
-      signOut(auth);
+      sessionStorage.removeItem("dinkes_auth_token");
+      signOut(auth).then(() => {
+        window.location.reload();
+      });
     });
 
-    // --- BAGIAN 1: KELOLA TAUTAN (FIRESTORE) ---
+    // --- BAGIAN 1: KELOLA TAUTAN ---
     let daftarLinkMemory = [];
 
     async function muatDataLinks() {
@@ -429,7 +463,6 @@
       }
     }
 
-    // Mengisi form saat tombol Edit diklik
     window.mulaiEditLink = function(id) {
       const target = daftarLinkMemory.find(item => item.id === id);
       if (!target) return;
@@ -439,37 +472,38 @@
       document.getElementById("link-kategori").value = target.kategori || "";
       document.getElementById("link-url").value = target.url || "";
       document.getElementById("link-urutan").value = target.urutan || 1;
+      document.getElementById("link-icon").value = target.icon || "";
 
       document.getElementById("form-title").innerText = "Edit Tautan Layanan";
       document.getElementById("btn-submit-link").innerText = "Simpan Perubahan";
       document.getElementById("btn-batal-edit").classList.remove("hidden");
-
       document.getElementById("form-tambah-link").scrollIntoView({ behavior: 'smooth' });
     };
 
     window.batalEdit = function() {
       document.getElementById("form-tambah-link").reset();
       document.getElementById("link-doc-id").value = "";
+      document.getElementById("link-icon").value = "";
       document.getElementById("form-title").innerText = "Tambah Tautan Layanan Baru";
       document.getElementById("btn-submit-link").innerText = "+ Simpan Tautan";
       document.getElementById("btn-batal-edit").classList.add("hidden");
     };
 
-    // Simpan Baru / Update Tautan
     document.getElementById("form-tambah-link").addEventListener("submit", async (e) => {
       e.preventDefault();
       const docId = document.getElementById("link-doc-id").value;
       const judul = document.getElementById("link-judul").value;
       const kategori = document.getElementById("link-kategori").value;
       const url = document.getElementById("link-url").value;
+      const icon = document.getElementById("link-icon").value.trim();
       const urutan = parseInt(document.getElementById("link-urutan").value, 10) || 1;
 
       try {
         if (docId) {
-          await updateDoc(doc(db, "links", docId), { judul, kategori, url, urutan });
+          await updateDoc(doc(db, "links", docId), { judul, kategori, url, urutan, icon });
           alert("Tautan berhasil diperbarui!");
         } else {
-          await addDoc(collection(db, "links"), { judul, kategori, url, urutan });
+          await addDoc(collection(db, "links"), { judul, kategori, url, urutan, icon });
         }
         window.batalEdit();
         muatDataLinks();
@@ -478,7 +512,6 @@
       }
     });
 
-    // Hapus Tautan dari Firestore
     window.hapusLink = async function(id) {
       if (confirm("Hapus tautan ini?")) {
         try {
@@ -490,57 +523,59 @@
       }
     };
 
-    // --- BAGIAN 2: REKAP BUKU TAMU (GOOGLE SHEETS) ---
+    // --- BAGIAN 2: REKAP BUKU TAMU (GOOGLE QUERY API) ---
     let dataTamuMentah = [];
     let headerTamu = [];
     let dataTamuTampil = [];
+    let kolomAktif = [];
+    let currentPage = 1;
+    let pageSize = 25;
 
     window.ambilDataGoogleSheet = function() {
-      const infoTotal = document.getElementById("info-total-tamu");
       const tbody = document.getElementById("tabel-body-tamu");
+      tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-slate-400">Mengambil data dari Google Spreadsheet...</td></tr>`;
 
-      if (CSV_URL.includes("PASTE_LINK_CSV")) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="6" class="p-8 text-center text-amber-800 bg-amber-50">
-              <b>Link CSV belum diatur!</b><br>
-              Masukkan tautan CSV Google Sheets ke variabel <code>CSV_URL</code> di dalam skrip file ini.
-            </td>
-          </tr>
-        `;
-        infoTotal.innerText = "Konfigurasi CSV belum selesai";
-        return;
-      }
+      // Mengambil data JSON langsung lewat Visualization Query API (Anti-Gagal CORS)
+      const urlGVIZ = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json`;
 
-      infoTotal.innerText = "Mengambil data tanggapan...";
+      fetch(urlGVIZ)
+        .then(res => res.text())
+        .then(txt => {
+          // GVIZ mengembalikan teks berformat: /*O_o*/ google.visualization.Query.setResponse({...});
+          const jsonString = txt.substring(txt.indexOf("{"), txt.lastIndexOf("}") + 1);
+          const json = JSON.parse(jsonString);
 
-      Papa.parse(CSV_URL, {
-        download: true,
-        header: true,
-        skipEmptyLines: true,
-        complete: function(results) {
-          if (results.data && results.data.length > 0) {
-            headerTamu = results.meta.fields;
-            
-            // Catat nomor baris fisik asli spreadsheet (baris 1 = header, data mulai baris 2)
-            dataTamuMentah = results.data.map((row, idx) => {
-              return {
-                ...row,
-                _sheetRowNumber: idx + 2
-              };
+          const table = json.table;
+          headerTamu = table.cols.map(c => c.label && c.label.trim() !== "" ? c.label : "Kolom");
+
+          dataTamuMentah = table.rows.map((r, idx) => {
+            const item = { _sheetRowNumber: idx + 2 };
+            r.c.forEach((cell, cellIdx) => {
+              const colName = headerTamu[cellIdx] || `Kolom_${cellIdx}`;
+              // Ambil formatted value 'f' atau raw value 'v'
+              item[colName] = cell ? (cell.f ? cell.f : (cell.v !== null ? cell.v : "")) : "";
             });
+            return item;
+          });
 
-            isiDropdownSort(headerTamu);
-            terapkanFilterDanSort();
-          } else {
-            tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-slate-400">Belum ada respon tamu di Google Form.</td></tr>`;
-            infoTotal.innerText = "0 data";
+          if (kolomAktif.length === 0) {
+            kolomAktif = [...headerTamu];
           }
-        },
-        error: function(err) {
-          tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-rose-600 bg-rose-50">Gagal mengunduh CSV. Pastikan opsi 'Publikasikan ke web' diatur ke CSV.</td></tr>`;
-        }
-      });
+
+          buatDaftarCheckboxKolom(headerTamu);
+          isiDropdownSort(headerTamu);
+          terapkanFilterDanSort();
+        })
+        .catch(err => {
+          console.error(err);
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="6" class="p-8 text-center text-rose-600 bg-rose-50">
+                Gagal memuat spreadsheet. Pastikan hak akses spreadsheet diatur ke: <b>"Siapa saja yang memiliki link sebagai Viewer/Pelihat"</b>.
+              </td>
+            </tr>
+          `;
+        });
     };
 
     function isiDropdownSort(kolom) {
@@ -551,26 +586,23 @@
       });
     }
 
-    // Filter Kata Kunci + Tanggal + Sorting
     window.terapkanFilterDanSort = function() {
       const keyword = (document.getElementById("input-cari-tamu").value || "").toLowerCase();
       const sortCol = document.getElementById("select-sort-kolom").value;
       const sortArah = document.getElementById("select-sort-arah").value;
-      // Ambil nilai rentang tanggal
+      
       const tglMulaiVal = document.getElementById("input-tgl-mulai").value;
       const tglSelesaiVal = document.getElementById("input-tgl-selesai").value;
 
       const tglMulai = tglMulaiVal ? new Date(tglMulaiVal + "T00:00:00") : null;
       const tglSelesai = tglSelesaiVal ? new Date(tglSelesaiVal + "T23:59:59") : null;
 
-      // Fungsi bantuan mengekstrak objek Date dari teks kolom respon Google Form
       function ekstrakTanggalRow(row) {
         const teks = Object.keys(row)
           .filter(k => k !== '_sheetRowNumber')
           .map(k => String(row[k]))
           .join(" ");
 
-        // Cocokkan pola: DD/MM/YYYY, MM/DD/YYYY, atau YYYY-MM-DD
         const match = teks.match(/(\d{1,4})[/-](\d{1,2})[/-](\d{1,4})/);
         if (!match) return null;
 
@@ -588,7 +620,6 @@
         return isNaN(dateObj.getTime()) ? null : dateObj;
       }
 
-      // Filter Data
       let hasil = dataTamuMentah.filter(row => {
         const valuesWithoutInternal = Object.keys(row)
           .filter(k => k !== '_sheetRowNumber')
@@ -596,7 +627,6 @@
 
         const cocokKeyword = valuesWithoutInternal.some(val => String(val).toLowerCase().includes(keyword));
 
-        // Pengecekan rentang tanggal
         let cocokRentang = true;
         if (tglMulai || tglSelesai) {
           const rowDate = ekstrakTanggalRow(row);
@@ -611,21 +641,18 @@
         return cocokKeyword && cocokRentang;
       });
 
-      // Sortir
       if (sortCol === "default") {
         hasil = sortArah === "desc" ? [...hasil].reverse() : [...hasil];
       } else {
         hasil.sort((a, b) => {
           const valA = (a[sortCol] || "").toString().toLowerCase();
           const valB = (b[sortCol] || "").toString().toLowerCase();
-
           const numA = parseFloat(valA);
           const numB = parseFloat(valB);
 
           if (!isNaN(numA) && !isNaN(numB)) {
             return sortArah === "asc" ? numA - numB : numB - numA;
           }
-
           if (valA < valB) return sortArah === "asc" ? -1 : 1;
           if (valA > valB) return sortArah === "asc" ? 1 : -1;
           return 0;
@@ -634,51 +661,69 @@
 
       dataTamuTampil = hasil;
       renderTabelTamu(hasil);
-      document.getElementById("info-total-tamu").innerText = `Menampilkan ${hasil.length} dari total ${dataTamuMentah.length} pengunjung`;
     };
 
-    // Reset Parameter Filter & Sort
     window.resetFilter = function() {
       document.getElementById("input-cari-tamu").value = "";
       document.getElementById("input-tgl-mulai").value = "";
       document.getElementById("input-tgl-selesai").value = "";
       document.getElementById("select-sort-kolom").value = "default";
       document.getElementById("select-sort-arah").value = "desc";
+      currentPage = 1;
       terapkanFilterDanSort();
     };
 
-    // Render Tabel Respons Tamu
     function renderTabelTamu(data) {
       const thead = document.getElementById("tabel-head-tamu");
       const tbody = document.getElementById("tabel-body-tamu");
+
+      const totalData = data.length;
+      let limit = pageSize === "all" ? totalData : parseInt(pageSize, 10);
+      const totalPages = Math.ceil(totalData / limit) || 1;
+      if (currentPage > totalPages) currentPage = totalPages;
+      if (currentPage < 1) currentPage = 1;
+
+      const startIndex = (currentPage - 1) * limit;
+      const endIndex = startIndex + limit;
+      const dataHalamanIni = data.slice(startIndex, endIndex);
+
+      document.getElementById("page-info").innerText = `Menampilkan ${totalData === 0 ? 0 : startIndex + 1}-${Math.min(endIndex, totalData)} dari ${totalData} tamu (Hal ${currentPage}/${totalPages})`;
+      document.getElementById("btn-prev-page").disabled = (currentPage <= 1);
+      document.getElementById("btn-next-page").disabled = (currentPage >= totalPages);
 
       thead.innerHTML = "";
       const trHead = document.createElement("tr");
       trHead.innerHTML = `<th class="p-3.5 pl-5 w-12 text-slate-400">No</th>`;
       headerTamu.forEach(col => {
-        trHead.innerHTML += `<th class="p-3.5 whitespace-nowrap">${col}</th>`;
+        if (kolomAktif.includes(col)) {
+          trHead.innerHTML += `<th class="p-3.5 whitespace-nowrap">${col}</th>`;
+        }
       });
       trHead.innerHTML += `<th class="p-3.5 text-center no-print w-24">Aksi</th>`;
       thead.appendChild(trHead);
 
       tbody.innerHTML = "";
-      if (data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${headerTamu.length + 2}" class="p-6 text-center text-slate-400">Tidak ada data yang cocok dengan kriteria.</td></tr>`;
+      if (dataHalamanIni.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${kolomAktif.length + 2}" class="p-6 text-center text-slate-400">Tidak ada data.</td></tr>`;
         return;
       }
 
-      data.forEach((row, index) => {
+      dataHalamanIni.forEach((row, idx) => {
+        const noUrut = startIndex + idx + 1;
         const tr = document.createElement("tr");
-        tr.className = "hover:bg-slate-50 transition";
-        let barisHtml = `<td class="p-3.5 pl-5 font-bold text-slate-400">${index + 1}</td>`;
+        tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+        let barisHtml = `<td class="p-3.5 pl-5 font-bold text-slate-400">${noUrut}</td>`;
+        
         headerTamu.forEach(col => {
-          barisHtml += `<td class="p-3.5 text-slate-700 whitespace-nowrap">${row[col] || "-"}</td>`;
+          if (kolomAktif.includes(col)) {
+            const val = row[col] || "-";
+            barisHtml += `<td class="p-3.5 text-slate-700 max-w-xs truncate" title="${val}">${val}</td>`;
+          }
         });
         
-        // Tombol Hapus Permanen ke Google Apps Script
         barisHtml += `
           <td class="p-3.5 text-center no-print">
-            <button id="btn-del-${row._sheetRowNumber}" onclick="window.hapusPermanenSheet(${row._sheetRowNumber})" title="Hapus permanen dari Google Sheet" class="text-rose-600 hover:text-rose-800 font-bold text-xs bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-lg transition">
+            <button id="btn-del-${row._sheetRowNumber}" onclick="window.hapusPermanenSheet(${row._sheetRowNumber})" class="text-rose-600 hover:text-rose-800 font-bold text-xs bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-lg transition">
               Hapus
             </button>
           </td>
@@ -688,7 +733,50 @@
       });
     }
 
-    // Ekspor Data ke File CSV
+    window.pindahHalaman = function(arah) {
+      currentPage += arah;
+      terapkanFilterDanSort();
+    };
+
+    window.ubahPageSize = function() {
+      pageSize = document.getElementById("select-page-size").value;
+      currentPage = 1;
+      terapkanFilterDanSort();
+    };
+
+    window.toggleDropdownKolom = function() {
+      document.getElementById("dropdown-kolom").classList.toggle("hidden");
+    };
+
+    function buatDaftarCheckboxKolom(kolomSemua) {
+      const box = document.getElementById("list-checkbox-kolom");
+      box.innerHTML = "";
+      kolomSemua.forEach(col => {
+        const label = document.createElement("label");
+        label.className = "flex items-center gap-2 text-xs text-slate-700 cursor-pointer hover:bg-slate-50 p-1 rounded";
+        label.innerHTML = `
+          <input type="checkbox" value="${col}" ${kolomAktif.includes(col) ? "checked" : ""} onchange="window.updateKolomTampil(this)" class="rounded text-emerald-600 focus:ring-emerald-500">
+          <span class="truncate">${col}</span>
+        `;
+        box.appendChild(label);
+      });
+    }
+
+    window.updateKolomTampil = function(cb) {
+      if (cb.checked) {
+        if (!kolomAktif.includes(cb.value)) kolomAktif.push(cb.value);
+      } else {
+        kolomAktif = kolomAktif.filter(k => k !== cb.value);
+      }
+      terapkanFilterDanSort();
+    };
+
+    window.centangSemuaKolom = function(status) {
+      kolomAktif = status ? [...headerTamu] : [];
+      buatDaftarCheckboxKolom(headerTamu);
+      terapkanFilterDanSort();
+    };
+
     window.unduhDataCSV = function() {
       const dataSumber = (dataTamuTampil.length > 0) ? dataTamuTampil : dataTamuMentah;
       if (!dataSumber || dataSumber.length === 0) {
@@ -696,7 +784,6 @@
         return;
       }
 
-      // Bersihkan properti internal '_sheetRowNumber' sebelum diunduh
       const dataBersih = dataSumber.map(item => {
         const duplikat = { ...item };
         delete duplikat._sheetRowNumber;
@@ -707,7 +794,6 @@
       const blob = new Blob(["\uFEFF" + csvString], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
-
       const tgl = new Date().toISOString().slice(0, 10);
       link.setAttribute("href", url);
       link.setAttribute("download", `Rekap_Tamu_Dinkes_${tgl}.csv`);
@@ -716,14 +802,15 @@
       document.body.removeChild(link);
     };
 
-    // Fungsi HAPUS PERMANEN Langsung di Google Spreadsheet
     window.hapusPermanenSheet = async function(barisSheet) {
-      if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes("PASTE_URL_APPS_SCRIPT")) {
-        alert("URL Apps Script belum diisi! Silakan deploy script Apps Script terlebih dahulu.");
-        return;
+      let token = sessionStorage.getItem("dinkes_auth_token");
+      if (!token) {
+        token = prompt("Sesi otorisasi kosong. Masukkan kata sandi admin Anda:");
+        if (!token) return;
+        sessionStorage.setItem("dinkes_auth_token", token);
       }
 
-      if (!confirm(`PERINGATAN: Apakah Anda yakin ingin menghapus data baris ke-${barisSheet} ini secara PERMANEN dari Google Spreadsheet?`)) {
+      if (!confirm(`PERINGATAN: Hapus data baris ke-${barisSheet} secara PERMANEN dari Google Spreadsheet?`)) {
         return;
       }
 
@@ -734,22 +821,10 @@
       }
 
       try {
-        // Kirim permintaan hapus ke Web App Google Apps Script
-        const urlEndpoint = `${APPS_SCRIPT_URL}?action=delete&row=${barisSheet}`;
-        
-        // Memakai mode: 'no-cors' agar request sukses dikirim tanpa kendala CORS browser
-        await fetch(urlEndpoint, {
-          method: "GET",
-          mode: "no-cors"
-        });
-
-        alert("Permintaan hapus terkirim ke server Google Spreadsheet!");
-
-        // Beri jeda 1 detik agar Google selesai memperbarui lembar kerja, lalu sinkronkan ulang tabel
-        setTimeout(() => {
-          window.ambilDataGoogleSheet();
-        }, 1200);
-
+        const urlEndpoint = `${APPS_SCRIPT_URL}?action=delete&row=${barisSheet}&token=${encodeURIComponent(token)}`;
+        await fetch(urlEndpoint, { method: "GET", mode: "no-cors" });
+        alert("Permintaan hapus diproses ke server Google Spreadsheet!");
+        setTimeout(() => { window.ambilDataGoogleSheet(); }, 1200);
       } catch (err) {
         alert("Gagal menghapus baris di Google Sheets: " + err.message);
         if (btn) {
