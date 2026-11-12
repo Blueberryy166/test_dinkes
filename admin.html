@@ -45,7 +45,6 @@
         <div>
           <label class="text-xs font-bold text-slate-600 block mb-1">Kata Sandi</label>
           <input type="password" id="login-password" placeholder="••••••••" required class="w-full border border-slate-200 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
-          <span class="text-[10px] text-slate-400 mt-1 block">Kata sandi berfungsi ganda sebagai token otorisasi database.</span>
         </div>
         <p id="login-error" class="text-xs text-rose-600 hidden font-medium"></p>
         <button type="submit" id="btn-submit-login" class="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition shadow-sm shadow-emerald-200">Masuk</button>
@@ -367,7 +366,7 @@
 
     setPersistence(auth, browserSessionPersistence);
 
-    // ID SPREADSHEET DARI LINK RESMI ANDA
+    // ID SPREADSHEET & APPS SCRIPT URL
     const SPREADSHEET_ID = "1AnQCfBsqaX1LOZLsBd4pPkc3q4tiQD1EiB4wOVXjXxo";
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxu1GkqMDIL1qJlRoJXmPiZSS0lCqWJaKhfVl_qH1PKVX1tQcTgrKAW6qJOkDHjmnKI/exec";
 
@@ -380,7 +379,6 @@
       } else {
         document.getElementById("auth-box").classList.remove("hidden");
         document.getElementById("admin-content").classList.add("hidden");
-        sessionStorage.removeItem("dinkes_auth_token");
       }
     });
 
@@ -398,7 +396,6 @@
       try {
         await setPersistence(auth, browserSessionPersistence);
         await signInWithEmailAndPassword(auth, email, pass);
-        sessionStorage.setItem("dinkes_auth_token", pass);
         document.getElementById("login-password").value = "";
       } catch (err) {
         errBox.innerText = "Email atau kata sandi tidak valid.";
@@ -410,7 +407,6 @@
     });
 
     document.getElementById("btn-logout").addEventListener("click", () => {
-      sessionStorage.removeItem("dinkes_auth_token");
       signOut(auth).then(() => {
         window.location.reload();
       });
@@ -532,13 +528,11 @@
       const tbody = document.getElementById("tabel-body-tamu");
       tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-slate-400">Mengambil data dari Google Spreadsheet...</td></tr>`;
 
-      // Mengambil data JSON langsung lewat Visualization Query API (Anti-Gagal CORS)
       const urlGVIZ = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json`;
 
       fetch(urlGVIZ)
         .then(res => res.text())
         .then(txt => {
-          // GVIZ mengembalikan teks berformat: /*O_o*/ google.visualization.Query.setResponse({...});
           const jsonString = txt.substring(txt.indexOf("{"), txt.lastIndexOf("}") + 1);
           const json = JSON.parse(jsonString);
 
@@ -549,7 +543,6 @@
             const item = { _sheetRowNumber: idx + 2 };
             r.c.forEach((cell, cellIdx) => {
               const colName = headerTamu[cellIdx] || `Kolom_${cellIdx}`;
-              // Ambil formatted value 'f' atau raw value 'v'
               item[colName] = cell ? (cell.f ? cell.f : (cell.v !== null ? cell.v : "")) : "";
             });
             return item;
@@ -800,13 +793,6 @@
     };
 
     window.hapusPermanenSheet = async function(barisSheet) {
-      let token = sessionStorage.getItem("dinkes_auth_token");
-      if (!token) {
-        token = prompt("Sesi otorisasi kosong. Masukkan kata sandi admin Anda:");
-        if (!token) return;
-        sessionStorage.setItem("dinkes_auth_token", token);
-      }
-
       if (!confirm(`PERINGATAN: Hapus data baris ke-${barisSheet} secara PERMANEN dari Google Spreadsheet?`)) {
         return;
       }
@@ -818,7 +804,7 @@
       }
 
       try {
-        const urlEndpoint = `${APPS_SCRIPT_URL}?action=delete&row=${barisSheet}&token=${encodeURIComponent(token)}`;
+        const urlEndpoint = `${APPS_SCRIPT_URL}?action=delete&row=${barisSheet}`;
         await fetch(urlEndpoint, { method: "GET", mode: "no-cors" });
         alert("Permintaan hapus diproses ke server Google Spreadsheet!");
         setTimeout(() => { window.ambilDataGoogleSheet(); }, 1200);
