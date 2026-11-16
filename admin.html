@@ -181,11 +181,11 @@
       <section id="panel-rekap" class="hidden space-y-6 max-w-6xl mx-auto">
         <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 class="text-2xl font-black text-slate-900">Rekapitulasi Buku Tamu</h2>
-            <p class="text-xs text-slate-500 mt-1">Data tersinkronisasi otomatis dari Google Spreadsheet.</p>
+            <h2 class="text-2xl font-black text-slate-900">Rekapitulasi Peminjaman Arsip</h2>
+            <p class="text-xs text-slate-500 mt-1">Data tersinkronisasi per Unit Kerja dari Google Spreadsheet.</p>
           </div>
-          <div class="flex items-center gap-2 no-print">
-            <button onclick="window.open('https://docs.google.com/forms/d/1UPJQvke1UwahlHZP2QMTDvWc1YFoxm_5dDZBdEN9TMI/edit#responses', '_blank')"
+          <div class="flex flex-wrap items-center gap-2 no-print">
+            <button onclick="window.open('https://docs.google.com/forms/d/e/1FAIpQLScrjn0XQ6OY5SUnVq9Q3s-At8vAmKuv5ISizImqsh4cG-dk6A/viewform?usp=sharing&ouid=101797940776861939861', '_blank')"
               class="inline-flex items-center gap-2 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition shadow-sm">
               <svg xmlns="http://www.w3.org/2000/svg"
                   class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
@@ -215,11 +215,27 @@
           </div>
         </div>
 
+        <!-- PANEL FILTER & PILIH UNIT KERJA -->
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3 no-print">
+          
+          <!-- BARIS KHUSUS DROPDOWN UNIT KERJA (SHEET) -->
+          <div class="pb-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              <label for="select-unit-kerja" class="text-xs font-extrabold text-slate-700 uppercase tracking-wider">Pilih Unit Kerja (Sheet):</label>
+            </div>
+            <div class="w-full sm:w-80">
+              <select id="select-unit-kerja" onchange="gantiUnitKerja()" class="w-full border-2 border-emerald-500/40 bg-emerald-50/40 text-slate-800 font-bold rounded-xl px-3.5 py-2 text-xs focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none cursor-pointer">
+                <option value="Form Responses 1">Semua Unit Kerja (Rekap Utama)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- BARIS FILTER PENCARIAN, TANGGAL & SORT -->
           <div class="grid grid-cols-1 md:grid-cols-6 gap-3">
             <div class="md:col-span-2">
               <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Cari Kata Kunci</label>
-              <input type="text" id="input-cari-tamu" onkeyup="terapkanFilterDanSort()" placeholder="Ketik nama, instansi, atau keterangan..." class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
+              <input type="text" id="input-cari-tamu" onkeyup="terapkanFilterDanSort()" placeholder="Ketik jenis arsip, nama pemohon..." class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
             </div>
 
             <div>
@@ -285,7 +301,7 @@
         <div class="hidden print:block text-center mb-6">
           <h1 class="text-lg font-bold uppercase tracking-wide">Pemerintah Kabupaten Cirebon</h1>
           <h2 class="text-xl font-black uppercase">Dinas Kesehatan</h2>
-          <p class="text-xs text-slate-600 mt-1">Laporan Rekapitulasi Kunjungan Tamu & Akses Mandiri</p>
+          <p class="text-xs text-slate-600 mt-1">Laporan Rekapitulasi Layanan Peminjaman Arsip</p>
           <hr class="border-slate-800 border-t-2 mt-3">
         </div>
 
@@ -294,7 +310,7 @@
             <table class="w-full text-left text-xs border-collapse">
               <thead id="tabel-head-tamu" class="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider"></thead>
               <tbody id="tabel-body-tamu" class="divide-y divide-slate-100">
-                <tr><td colspan="6" class="p-8 text-center text-slate-400">Tekan tombol "Sinkron Data" untuk memuat respon Google Form.</td></tr>
+                <tr><td colspan="6" class="p-8 text-center text-slate-400">Tekan tombol "Sinkron Data" untuk memuat data.</td></tr>
               </tbody>
             </table>
           </div>
@@ -368,7 +384,51 @@
 
     // ID SPREADSHEET & APPS SCRIPT URL
     const SPREADSHEET_ID = "1AnQCfBsqaX1LOZLsBd4pPkc3q4tiQD1EiB4wOVXjXxo";
-    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxu1GkqMDIL1qJlRoJXmPiZSS0lCqWJaKhfVl_qH1PKVX1tQcTgrKAW6qJOkDHjmnKI/exec";
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyuN3e5lZU9chPWUqWu7IueylE60hLNpyYulrQAu26W1riX-7lkxeHBryEUeRBLNCW4/exec";
+
+    // =========================================================================
+    // DAFTAR UNIT KERJA (NAMA SHEET HARUS SAMA PERSIS DENGAN TAB DI SPREADSHEET)
+    // =========================================================================
+    // Fallback bila daftar sheet gagal diambil dari Apps Script
+    let DAFTAR_UNIT_KERJA = [
+      { sheet: "Form Responses 1", label: "Semua Unit Kerja (Rekap Utama)" },
+      { sheet: "Sekretariat", label: "Sekretariat" },
+      { sheet: "Bidang P2P", label: "Bidang P2P" },
+      { sheet: "Bidang Yankes", label: "Bidang Yankes" },
+      { sheet: "Bidang Kesmas", label: "Bidang Kesmas" },
+      { sheet: "Bidang SDK", label: "Bidang SDK" },
+      { sheet: "Puskesmas Astanajapura", label: "Puskesmas Astanajapura" }
+    ];
+
+    function inisialisasiDropdownUnit() {
+      const selectUnit = document.getElementById("select-unit-kerja");
+      const dipilih = selectUnit.value;
+      selectUnit.innerHTML = "";
+      DAFTAR_UNIT_KERJA.forEach(unit => {
+        const opt = document.createElement("option");
+        opt.value = unit.sheet;
+        opt.textContent = unit.label;
+        selectUnit.appendChild(opt);
+      });
+      if (dipilih && DAFTAR_UNIT_KERJA.some(u => u.sheet === dipilih)) selectUnit.value = dipilih;
+    }
+    inisialisasiDropdownUnit();
+
+    // Ambil semua tab unit kerja otomatis dari Spreadsheet (via Apps Script)
+    async function muatDaftarUnitDinamis() {
+      try {
+        const res = await fetch(`${APPS_SCRIPT_URL}?action=sheets&_=${Date.now()}`);
+        const json = await res.json();
+        if (json.status === "success" && Array.isArray(json.sheets) && json.sheets.length) {
+          DAFTAR_UNIT_KERJA = [{ sheet: "Form Responses 1", label: "Semua Unit Kerja (Rekap Utama)" }]
+            .concat(json.sheets.map(n => ({ sheet: n, label: n })));
+          inisialisasiDropdownUnit();
+        }
+      } catch (err) {
+        console.warn("Daftar unit dinamis gagal dimuat, memakai daftar bawaan.", err);
+      }
+    }
+    muatDaftarUnitDinamis();
 
     onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -516,7 +576,7 @@
       }
     };
 
-    // --- BAGIAN 2: REKAP BUKU TAMU (GOOGLE QUERY API) ---
+    // --- BAGIAN 2: REKAP DATA (SESUAI STRUKTUR BARIS 5 HEADER & KOLOM A-E UNIT KERJA) ---
     let dataTamuMentah = [];
     let headerTamu = [];
     let dataTamuTampil = [];
@@ -524,29 +584,66 @@
     let currentPage = 1;
     let pageSize = 25;
 
+    window.gantiUnitKerja = function() {
+      currentPage = 1;
+      kolomAktif = [];
+      window.ambilDataGoogleSheet();
+    };
+
     window.ambilDataGoogleSheet = function() {
       const tbody = document.getElementById("tabel-body-tamu");
-      tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-slate-400">Mengambil data dari Google Spreadsheet...</td></tr>`;
+      const sheetDipilih = document.getElementById("select-unit-kerja").value || "Form Responses 1";
+      const isSheetUtama = sheetDipilih.trim().toLowerCase() === "form responses 1";
+      
+      // Di sheet utama data mulai baris 2; di sheet unit kerja header baris 5 & data mulai baris 6
+      const startRowOffset = isSheetUtama ? 2 : 6;
+      const rangeParam = isSheetUtama ? "" : "&range=A5:E";
+      
+      tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-slate-400">Mengambil data unit kerja <b>${sheetDipilih}</b>...</td></tr>`;
 
-      const urlGVIZ = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json`;
+      const urlGVIZ = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetDipilih)}${rangeParam}&headers=1&_=${Date.now()}`;
 
-      fetch(urlGVIZ)
+      fetch(urlGVIZ, { cache: "no-store" })
         .then(res => res.text())
         .then(txt => {
           const jsonString = txt.substring(txt.indexOf("{"), txt.lastIndexOf("}") + 1);
           const json = JSON.parse(jsonString);
 
-          const table = json.table;
-          headerTamu = table.cols.map(c => c.label && c.label.trim() !== "" ? c.label : "Kolom");
+          if (json.status === "error") {
+            throw new Error(json.errors?.[0]?.detailed_message || "Sheet tidak ditemukan");
+          }
 
-          dataTamuMentah = table.rows.map((r, idx) => {
-            const item = { _sheetRowNumber: idx + 2 };
-            r.c.forEach((cell, cellIdx) => {
-              const colName = headerTamu[cellIdx] || `Kolom_${cellIdx}`;
-              item[colName] = cell ? (cell.f ? cell.f : (cell.v !== null ? cell.v : "")) : "";
+          const table = json.table;
+          
+          // Di sheet unit kerja, Kolom A (indeks 0) adalah "No." manual yang sudah diganti kolom "No" di tabel web
+          const rawHeaders = table.cols.map(c => c.label && c.label.trim() !== "" ? c.label.trim() : "Kolom");
+          
+          // Header asli sesuai urutan kolom di spreadsheet (dipakai untuk memetakan sel)
+          const headerUntukPeta = isSheetUtama ? rawHeaders : rawHeaders.slice(1);
+
+          if (isSheetUtama) {
+            headerTamu = urutkanKolomUtama(rawHeaders);
+          } else {
+            // Ambil Kolom B, C, D, E saja (lewati kolom A "No." agar tidak dobel dengan kolom No di tabel admin)
+            headerTamu = rawHeaders.slice(1);
+          }
+
+          dataTamuMentah = table.rows
+            .map((r, idx) => {
+              const item = { _sheetRowNumber: idx + startRowOffset };
+              const cells = isSheetUtama ? r.c : r.c.slice(1);
+              
+              cells.forEach((cell, cellIdx) => {
+                const colName = headerUntukPeta[cellIdx] || `Kolom_${cellIdx}`;
+                item[colName] = cell ? (cell.f ? cell.f : (cell.v !== null ? cell.v : "")) : "";
+              });
+              return item;
+            })
+            // Saring baris kosong yang hanya berisi nomor urut manual di Kolom A
+            .filter(row => {
+              if (isSheetUtama) return true;
+              return headerTamu.some(col => String(row[col] || "").trim() !== "");
             });
-            return item;
-          });
 
           if (kolomAktif.length === 0) {
             kolomAktif = [...headerTamu];
@@ -558,15 +655,36 @@
         })
         .catch(err => {
           console.error(err);
+          document.getElementById("tabel-head-tamu").innerHTML = "";
           tbody.innerHTML = `
             <tr>
               <td colspan="6" class="p-8 text-center text-rose-600 bg-rose-50">
-                Gagal memuat spreadsheet. Pastikan hak akses spreadsheet diatur ke: <b>"Siapa saja yang memiliki link sebagai Viewer/Pelihat"</b>.
+                Belum ada data atau sheet <b>"${sheetDipilih}"</b> belum dibuat di Google Spreadsheet.<br>
+                <span class="text-[11px] text-slate-500">Pastikan hak akses spreadsheet diatur ke: <b>"Siapa saja yang memiliki link sebagai Viewer/Pelihat"</b>.</span>
               </td>
             </tr>
           `;
         });
     };
+
+    // Urutan tampilan rekap utama: Jenis Arsip, Nama Pemohon, Tgl Pinjam, Tgl Kembali, lalu kolom lainnya
+    function urutkanKolomUtama(headers) {
+      const aturan = [
+        /timestamp/i,
+        /arsip/i,
+        /nama/i,
+        /peminjaman|tanggal.*pinjam/i,
+        /pengembalian|kembali/i
+      ];
+      const terpakai = new Set();
+      const hasil = [];
+      aturan.forEach(re => {
+        const idx = headers.findIndex((h, i) => !terpakai.has(i) && re.test(h));
+        if (idx !== -1) { terpakai.add(idx); hasil.push(headers[idx]); }
+      });
+      headers.forEach((h, i) => { if (!terpakai.has(i)) hasil.push(h); });
+      return hasil;
+    }
 
     function isiDropdownSort(kolom) {
       const select = document.getElementById("select-sort-kolom");
@@ -677,7 +795,7 @@
       const endIndex = startIndex + limit;
       const dataHalamanIni = data.slice(startIndex, endIndex);
 
-      document.getElementById("page-info").innerText = `Menampilkan ${totalData === 0 ? 0 : startIndex + 1}-${Math.min(endIndex, totalData)} dari ${totalData} tamu (Hal ${currentPage}/${totalPages})`;
+      document.getElementById("page-info").innerText = `Menampilkan ${totalData === 0 ? 0 : startIndex + 1}-${Math.min(endIndex, totalData)} dari ${totalData} data (Hal ${currentPage}/${totalPages})`;
       document.getElementById("btn-prev-page").disabled = (currentPage <= 1);
       document.getElementById("btn-next-page").disabled = (currentPage >= totalPages);
 
@@ -694,7 +812,7 @@
 
       tbody.innerHTML = "";
       if (dataHalamanIni.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="${kolomAktif.length + 2}" class="p-6 text-center text-slate-400">Tidak ada data.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="${kolomAktif.length + 2}" class="p-6 text-center text-slate-400">Tidak ada data pada unit kerja ini.</td></tr>`;
         return;
       }
 
@@ -770,12 +888,15 @@
     window.unduhDataCSV = function() {
       const dataSumber = (dataTamuTampil.length > 0) ? dataTamuTampil : dataTamuMentah;
       if (!dataSumber || dataSumber.length === 0) {
-        alert("Tidak ada data tamu untuk diekspor.");
+        alert("Tidak ada data untuk diekspor.");
         return;
       }
 
-      const dataBersih = dataSumber.map(item => {
-        const duplikat = { ...item };
+      const sheetAktif = document.getElementById("select-unit-kerja").value || "Semua_Unit";
+      const namaFileUnit = sheetAktif.replace(/\s+/g, "_");
+
+      const dataBersih = dataSumber.map((item, idx) => {
+        const duplikat = { No: idx + 1, ...item };
         delete duplikat._sheetRowNumber;
         return duplikat;
       });
@@ -786,14 +907,16 @@
       const url = URL.createObjectURL(blob);
       const tgl = new Date().toISOString().slice(0, 10);
       link.setAttribute("href", url);
-      link.setAttribute("download", `Rekap_Tamu_Dinkes_${tgl}.csv`);
+      link.setAttribute("download", `Rekap_Arsip_${namaFileUnit}_${tgl}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     };
 
     window.hapusPermanenSheet = async function(barisSheet) {
-      if (!confirm(`PERINGATAN: Hapus data baris ke-${barisSheet} secara PERMANEN dari Google Spreadsheet?`)) {
+      const sheetAktif = document.getElementById("select-unit-kerja").value || "Form Responses 1";
+
+      if (!confirm(`PERINGATAN: Hapus data baris ke-${barisSheet} di sheet "${sheetAktif}" secara PERMANEN?`)) {
         return;
       }
 
@@ -803,11 +926,26 @@
         btn.disabled = true;
       }
 
+      const urlEndpoint = `${APPS_SCRIPT_URL}?action=delete&row=${barisSheet}&sheet=${encodeURIComponent(sheetAktif)}&_=${Date.now()}`;
       try {
-        const urlEndpoint = `${APPS_SCRIPT_URL}?action=delete&row=${barisSheet}`;
-        await fetch(urlEndpoint, { method: "GET", mode: "no-cors" });
-        alert("Permintaan hapus diproses ke server Google Spreadsheet!");
-        setTimeout(() => { window.ambilDataGoogleSheet(); }, 1200);
+        let hasil = null;
+        try {
+          // Mode normal: bisa membaca balasan server (konfirmasi nyata)
+          const res = await fetch(urlEndpoint, { method: "GET" });
+          hasil = await res.json();
+        } catch (corsErr) {
+          // Cadangan: tanpa balasan; tunggu lebih lama agar skrip selesai sebelum memuat ulang
+          await fetch(urlEndpoint, { method: "GET", mode: "no-cors" });
+          await new Promise(r => setTimeout(r, 5000));
+        }
+
+        if (hasil && hasil.status !== "success") {
+          alert("Gagal menghapus: " + (hasil.message || "kesalahan tidak diketahui"));
+        } else if (hasil) {
+          const info = `Data baris ke-${barisSheet} di sheet "${sheetAktif}" berhasil dihapus.`;
+          alert(info);
+        }
+        await window.ambilDataGoogleSheet();
       } catch (err) {
         alert("Gagal menghapus baris di Google Sheets: " + err.message);
         if (btn) {
