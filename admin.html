@@ -5,23 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard - Dinas Kesehatan</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- PapaParse untuk ekspor CSV -->
+  <!-- PapaParse untuk ekspor CSV & membaca CSV -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 
   <style>
     @media print {
       body { background-color: white !important; padding: 0 !important; }
-      aside, #auth-box, #btn-tab-links, #btn-tab-rekap, .no-print { display: none !important; }
+      aside, #auth-box, .no-print { display: none !important; }
       main { padding: 0 !important; overflow: visible !important; }
+      #panel-links, #panel-konsul, #panel-survei { display: none !important; }
       #panel-rekap { display: block !important; }
-      #panel-links { display: none !important; }
       .print-area { border: none !important; box-shadow: none !important; }
       table { width: 100% !important; border-collapse: collapse !important; }
       th, td { border: 1px solid #cbd5e1 !important; padding: 6px 8px !important; font-size: 10px !important; }
     }
   </style>
 </head>
-<body class="bg-slate-100 min-h-screen text-slate-800 font-sans">
+<body data-tab="links" class="bg-slate-100 min-h-screen text-slate-800 font-sans">
 
   <!-- ================= LAYAR LOGIN ================= -->
   <div id="auth-box" class="flex min-h-screen items-center justify-center p-4">
@@ -85,6 +85,20 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
             <span>Rekap Buku Tamu</span>
+          </button>
+
+          <button id="btn-tab-konsul" onclick="gantiTab('konsul')" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white hover:bg-slate-800">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+            <span>Konsultasi Kearsipan</span>
+          </button>
+
+          <button id="btn-tab-survei" onclick="gantiTab('survei')" class="w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white hover:bg-slate-800">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+            </svg>
+            <span class="text-left">Survei Kepuasan Masyarakat</span>
           </button>
         </nav>
       </div>
@@ -325,30 +339,284 @@
         </div>
       </section>
 
+      <!-- TAB 3: KONSULTASI KEARSIPAN -->
+      <section id="panel-konsul" class="hidden space-y-6 max-w-6xl mx-auto">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl font-black text-slate-900">Konsultasi Kearsipan</h2>
+            <p class="text-xs text-slate-500 mt-1">Pengajuan konsultasi dari Google Form. Kolom <b>Konsultasi yang Diberikan</b> diisi oleh admin.</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 no-print">
+            <button id="btn-form-konsul" onclick="bukaFormKonsultasi()" class="hidden inline-flex items-center gap-2 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition shadow-sm">
+              Google Forms
+            </button>
+            <button onclick="bukaSpreadsheetKonsultasi()" class="inline-flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition shadow-sm">
+              Google Spreadsheets
+            </button>
+            <button onclick="unduhCSVKonsultasi()" class="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition shadow-sm">
+              Ekspor CSV
+            </button>
+            <button onclick="ambilDataKonsultasi()" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-sm shadow-emerald-200">
+              Sinkron Data
+            </button>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3 no-print">
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <div class="md:col-span-2">
+              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Cari Kata Kunci</label>
+              <input type="text" id="k-input-cari" onkeyup="terapkanFilterKonsultasi()" placeholder="Ketik nama pemohon, tempat, permasalahan..." class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+            <div>
+              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Dari Tanggal</label>
+              <input type="date" id="k-input-tgl-mulai" onchange="terapkanFilterKonsultasi()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+            <div>
+              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Sampai Tanggal</label>
+              <input type="date" id="k-input-tgl-selesai" onchange="terapkanFilterKonsultasi()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+            <div>
+              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Urutan Tanggal</label>
+              <select id="k-select-sort-arah" onchange="terapkanFilterKonsultasi()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+                <option value="desc">Terbaru</option>
+                <option value="asc">Terlama</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div class="flex items-center gap-2">
+              <label class="text-slate-500 font-semibold">Tampilkan per halaman:</label>
+              <select id="k-select-page-size" onchange="ubahPageSizeKonsultasi()" class="border border-slate-200 rounded-lg px-2.5 py-1 text-xs bg-white outline-none focus:ring-1 focus:ring-emerald-500">
+                <option value="10">10 baris</option>
+                <option value="25" selected>25 baris</option>
+                <option value="50">50 baris</option>
+                <option value="all">Semua</option>
+              </select>
+            </div>
+            <button onclick="resetFilterKonsultasi()" class="text-emerald-700 font-bold hover:underline">Reset Filter</button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print-area">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead id="k-tabel-head" class="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider"></thead>
+              <tbody id="k-tabel-body" class="divide-y divide-slate-100">
+                <tr><td colspan="8" class="p-8 text-center text-slate-400">Tekan tombol "Sinkron Data" untuk memuat data.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between px-4 py-3 bg-white rounded-2xl border border-slate-200 text-xs no-print">
+          <span id="k-page-info" class="text-slate-500 font-medium">Halaman 1 dari 1</span>
+          <div class="flex items-center gap-1.5">
+            <button onclick="pindahHalamanKonsultasi(-1)" id="k-btn-prev" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 font-bold disabled:opacity-40">Sebelumnya</button>
+            <button onclick="pindahHalamanKonsultasi(1)" id="k-btn-next" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 font-bold disabled:opacity-40">Selanjutnya</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 4: SURVEI KEPUASAN MASYARAKAT -->
+      <section id="panel-survei" class="hidden space-y-6 max-w-6xl mx-auto">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 class="text-2xl font-black text-slate-900">Survei Kepuasan Masyarakat</h2>
+            <p class="text-xs text-slate-500 mt-1">Layanan Kearsipan - Indeks Kepuasan Masyarakat (IKM) dihitung otomatis dari 9 unsur pelayanan (Permenpan RB No. 14 Tahun 2017).</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 no-print">
+            <button id="btn-form-survei" onclick="bukaFormSurvei()" class="hidden inline-flex items-center gap-2 bg-purple-700 hover:bg-purple-800 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition shadow-sm">
+              Google Forms
+            </button>
+            <button onclick="bukaSpreadsheetSurvei()" class="inline-flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition shadow-sm">
+              Google Spreadsheets
+            </button>
+            <button onclick="unduhCSVRekapSurvei()" class="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition shadow-sm">
+              Ekspor Rekap IKM
+            </button>
+            <button onclick="unduhCSVResponSurvei()" class="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition shadow-sm">
+              Ekspor Respon
+            </button>
+            <button onclick="ambilDataSurvei()" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl transition shadow-sm shadow-emerald-200">
+              Sinkron Data
+            </button>
+          </div>
+        </div>
+
+        <!-- FILTER -->
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 space-y-3 no-print">
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+            <div>
+              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Dari Tanggal</label>
+              <input type="date" id="s-tgl-mulai" onchange="terapkanFilterSurvei()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+            <div>
+              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Sampai Tanggal</label>
+              <input type="date" id="s-tgl-selesai" onchange="terapkanFilterSurvei()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+            </div>
+            <div>
+              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Jenis Layanan</label>
+              <select id="s-filter-layanan" onchange="terapkanFilterSurvei()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none"><option value="">Semua</option></select>
+            </div>
+            <div>
+              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Kategori Pengguna</label>
+              <select id="s-filter-kategori" onchange="terapkanFilterSurvei()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none"><option value="">Semua</option></select>
+            </div>
+            <div>
+              <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Jenis Kelamin</label>
+              <select id="s-filter-jk" onchange="terapkanFilterSurvei()" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none"><option value="">Semua</option></select>
+            </div>
+          </div>
+          <div class="pt-3 border-t border-slate-100 flex justify-end text-xs">
+            <button onclick="resetFilterSurvei()" class="text-emerald-700 font-bold hover:underline">Reset Filter</button>
+          </div>
+        </div>
+
+        <div id="s-peringatan" class="hidden rounded-2xl border border-amber-200 bg-amber-50 text-amber-800 text-xs p-4 no-print"></div>
+
+        <!-- RINGKASAN IKM -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div class="skm-kartu bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Jumlah Responden</p>
+            <p id="s-responden" class="mt-1 text-3xl font-black text-slate-900 tabular-nums">-</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">sesuai filter yang dipilih</p>
+          </div>
+          <div class="skm-kartu bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Nilai IKM</p>
+            <p id="s-ikm" class="mt-1 text-3xl font-black text-slate-900 tabular-nums">-</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">skala 1,00 - 4,00</p>
+          </div>
+          <div class="skm-kartu bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">IKM Konversi</p>
+            <p id="s-konversi" class="mt-1 text-3xl font-black text-slate-900 tabular-nums">-</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">skala 25 - 100</p>
+          </div>
+          <div class="skm-kartu bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Mutu Pelayanan</p>
+            <div class="mt-1 flex items-center gap-3">
+              <span id="s-mutu-huruf" class="w-11 h-11 rounded-xl border border-slate-200 bg-slate-50 text-slate-400 flex items-center justify-center text-2xl font-black">-</span>
+              <div>
+                <p id="s-mutu-teks" class="text-sm font-extrabold text-slate-900">Belum ada data</p>
+                <p class="text-[11px] text-slate-400">kinerja unit pelayanan</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- NILAI PER UNSUR -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden print-area">
+          <div class="p-4 border-b border-slate-100">
+            <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Nilai per Unsur Pelayanan</h3>
+            <p class="text-[11px] text-slate-400 mt-0.5">Panjang batang = nilai rata-rata unsur (NRR) dari skala 4.</p>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs border-collapse">
+              <thead class="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider">
+                <tr>
+                  <th rowspan="2" class="p-3 pl-5 w-10 align-bottom">No</th>
+                  <th rowspan="2" class="p-3 align-bottom">Unsur Pelayanan</th>
+                  <th rowspan="2" class="p-3 text-center align-bottom">Resp.</th>
+                  <th colspan="4" class="p-2 text-center border-b border-slate-200">Jumlah Jawaban per Nilai</th>
+                  <th rowspan="2" class="p-3 align-bottom min-w-[200px]">NRR</th>
+                  <th rowspan="2" class="p-3 text-right align-bottom">NRR Tertimbang</th>
+                  <th rowspan="2" class="p-3 text-right align-bottom">Nilai Konversi</th>
+                  <th rowspan="2" class="p-3 text-center align-bottom">Mutu</th>
+                </tr>
+                <tr>
+                  <th class="p-2 text-center w-12">1</th>
+                  <th class="p-2 text-center w-12">2</th>
+                  <th class="p-2 text-center w-12">3</th>
+                  <th class="p-2 text-center w-12">4</th>
+                </tr>
+              </thead>
+              <tbody id="s-tabel-unsur" class="divide-y divide-slate-100">
+                <tr><td colspan="11" class="p-8 text-center text-slate-400">Tekan tombol "Sinkron Data" untuk memuat data.</td></tr>
+              </tbody>
+              <tfoot id="s-tabel-unsur-foot" class="bg-slate-50 border-t-2 border-slate-200 font-bold text-slate-800"></tfoot>
+            </table>
+          </div>
+          <div class="p-4 border-t border-slate-100 text-[11px] text-slate-500 space-y-1">
+            <p><b>Rumus:</b> NRR = jumlah nilai jawaban : jumlah responden. NRR tertimbang = NRR x (1/9). IKM = jumlah NRR tertimbang. IKM konversi = IKM x 25.</p>
+            <p><b>Mutu:</b> A (Sangat Baik) 88,31 - 100,00 | B (Baik) 76,61 - 88,30 | C (Kurang Baik) 65,00 - 76,60 | D (Tidak Baik) 25,00 - 64,99.</p>
+          </div>
+        </div>
+
+        <!-- DAFTAR RESPON -->
+        <div class="no-print space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-3 text-xs">
+            <h3 class="font-bold text-slate-800 uppercase tracking-wider">Daftar Respon</h3>
+            <div class="flex items-center gap-3">
+              <div class="flex items-center gap-2">
+                <label class="text-slate-500 font-semibold">Urutan:</label>
+                <select id="s-sort-arah" onchange="terapkanFilterSurvei()" class="border border-slate-200 rounded-lg px-2.5 py-1 text-xs bg-white outline-none focus:ring-1 focus:ring-emerald-500">
+                  <option value="desc">Terbaru</option>
+                  <option value="asc">Terlama</option>
+                </select>
+              </div>
+              <div class="flex items-center gap-2">
+                <label class="text-slate-500 font-semibold">Per halaman:</label>
+                <select id="s-page-size" onchange="ubahPageSizeSurvei()" class="border border-slate-200 rounded-lg px-2.5 py-1 text-xs bg-white outline-none focus:ring-1 focus:ring-emerald-500">
+                  <option value="10">10 baris</option>
+                  <option value="25" selected>25 baris</option>
+                  <option value="50">50 baris</option>
+                  <option value="all">Semua</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400">U1-U9 = nilai (1-4) tiap unsur: <span id="s-legenda-unsur"></span></p>
+
+          <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs border-collapse">
+                <thead id="s-respon-head" class="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider"></thead>
+                <tbody id="s-respon-body" class="divide-y divide-slate-100">
+                  <tr><td colspan="16" class="p-8 text-center text-slate-400">Tekan tombol "Sinkron Data" untuk memuat data.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between px-4 py-3 bg-white rounded-2xl border border-slate-200 text-xs">
+            <span id="s-page-info" class="text-slate-500 font-medium">Halaman 1 dari 1</span>
+            <div class="flex items-center gap-1.5">
+              <button onclick="pindahHalamanSurvei(-1)" id="s-btn-prev" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 font-bold disabled:opacity-40">Sebelumnya</button>
+              <button onclick="pindahHalamanSurvei(1)" id="s-btn-next" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 font-bold disabled:opacity-40">Selanjutnya</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </main>
   </div>
 
   <script>
     function gantiTab(tab) {
-      const panelLinks = document.getElementById("panel-links");
-      const panelRekap = document.getElementById("panel-rekap");
-      const btnLinks = document.getElementById("btn-tab-links");
-      const btnRekap = document.getElementById("btn-tab-rekap");
+      const AKTIF = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-white bg-emerald-600 shadow-sm shadow-emerald-900/40";
+      const NONAKTIF = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white hover:bg-slate-800";
+      const tabs = {
+        links: ["panel-links", "btn-tab-links"],
+        rekap: ["panel-rekap", "btn-tab-rekap"],
+        konsul: ["panel-konsul", "btn-tab-konsul"],
+        survei: ["panel-survei", "btn-tab-survei"]
+      };
 
-      if (tab === "links") {
-        panelLinks.classList.remove("hidden");
-        panelRekap.classList.add("hidden");
-        btnLinks.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-white bg-emerald-600 shadow-sm shadow-emerald-900/40";
-        btnRekap.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white hover:bg-slate-800";
-      } else {
-        panelLinks.classList.add("hidden");
-        panelRekap.classList.remove("hidden");
-        btnRekap.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-white bg-emerald-600 shadow-sm shadow-emerald-900/40";
-        btnLinks.className = "w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-bold transition text-slate-400 hover:text-white hover:bg-slate-800";
+      Object.keys(tabs).forEach(k => {
+        document.getElementById(tabs[k][0]).classList.toggle("hidden", k !== tab);
+        document.getElementById(tabs[k][1]).className = (k === tab) ? AKTIF : NONAKTIF;
+      });
+      document.body.dataset.tab = tab;
 
-        if (typeof window.ambilDataGoogleSheet === "function") {
-          window.ambilDataGoogleSheet();
-        }
+      if (tab === "rekap" && typeof window.ambilDataGoogleSheet === "function") {
+        window.ambilDataGoogleSheet();
+      }
+      if (tab === "konsul" && typeof window.ambilDataKonsultasi === "function") {
+        window.ambilDataKonsultasi();
+      }
+      if (tab === "survei" && typeof window.ambilDataSurvei === "function") {
+        window.ambilDataSurvei();
       }
     }
   </script>
@@ -386,82 +654,55 @@
     const SPREADSHEET_ID = "1AnQCfBsqaX1LOZLsBd4pPkc3q4tiQD1EiB4wOVXjXxo";
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyuN3e5lZU9chPWUqWu7IueylE60hLNpyYulrQAu26W1riX-7lkxeHBryEUeRBLNCW4/exec";
 
+    // KONSULTASI KEARSIPAN (spreadsheet TERPISAH dari rekap tamu)
+    // ID spreadsheet dari URL: docs.google.com/spreadsheets/d/<ID>/edit (harus sama dengan kode.gs)
+    const SPREADSHEET_KONSULTASI_ID = "1z8jnXmR6DBZ3PjsXPaLlr8VT_GkC0CHucqTmGpn1gsc";
+    // Nama tab respon Form Konsultasi (harus sama persis dengan SHEET_KONSULTASI di kode.gs)
+    const SHEET_KONSULTASI = "Form Responses 1";
+    // Tempel tautan Google Form Konsultasi di sini (opsional; bila kosong tombol "Google Forms" disembunyikan)
+    const LINK_FORM_KONSULTASI = "";
+    const KOLOM_KONSUL = "Konsultasi yang Diberikan";
+    const RE_KONSUL = /yang\s+diberikan|konsultasi\s+diberikan|tanggapan/i;
+    const RE_WAKTU = /timestamp|cap\s*waktu/i;
+
+    // Amankan teks dari Form (publik) sebelum dimasukkan ke HTML
+    function esc(v) {
+      return String(v === null || v === undefined ? "" : v)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
     // =========================================================================
     // DAFTAR UNIT KERJA (NAMA SHEET HARUS SAMA PERSIS DENGAN TAB DI SPREADSHEET)
     // =========================================================================
-    // Fallback bila daftar sheet gagal diambil dari Apps Script
-    let DAFTAR_UNIT_KERJA = [
-      { sheet: "Form Responses 1", label: "Semua Unit Kerja (Rekap Utama)" },
-      { sheet: "Sekretariat", label: "Sekretariat" },
-      { sheet: "Subbagian Umum dan Kepegawaian", label: "Subbagian Umum dan Kepegawaian" },
-      { sheet: "Subbagian Keuangan dan Aset", label: "Subbagian Keuangan dan Aset" },
-      { sheet: "Bidang Pelayanan Kesehatan", label: "Bidang Pelayanan Kesehatan" },
-      { sheet: "Bidang Sumber Daya Kesehatan", label: "Bidang Sumber Daya Kesehatan" },
-      { sheet: "Bidang Pencegahan dan Pengendalian Penyakit", label: "Bidang Pencegahan dan Pengendalian Penyakit" },
-      { sheet: "Bidang Kesehatan Masyarakat", label: "Bidang Kesehatan Masyarakat" },
-      { sheet: "UPTD Laboratorium Kesehatan Daerah Kabupaten Cirebon", label: "UPTD Laboratorium Kesehatan Daerah Kabupaten Cirebon" },
-      { sheet: "UPTD PSC 119", label: "UPTD PSC 119" },
-      { sheet: "Puskesmas Astanajapura", label: "Puskesmas Astanajapura" },
-      { sheet: "Puskesmas Astanalanggar", label: "Puskesmas Astanalanggar" },
-      { sheet: "Puskesmas Tengahtani", label: "Puskesmas Tengahtani" },
-      { sheet: "Puskesmas Babakan", label: "Puskesmas Babakan" },
-      { sheet: "Puskesmas Beber", label: "Puskesmas Beber" },
-      { sheet: "Puskesmas Bunder", label: "Puskesmas Bunder" },
-      { sheet: "Puskesmas Bangodua", label: "Puskesmas Bangodua" },
-      { sheet: "Puskesmas Cibogo", label: "Puskesmas Cibogo" },
-      { sheet: "Puskesmas Ciledug", label: "Puskesmas Ciledug" },
-      { sheet: "Puskesmas Ciperna", label: "Puskesmas Ciperna" },
-      { sheet: "Puskesmas Ciwaringin", label: "Puskesmas Ciwaringin" },
-      { sheet: "Puskesmas Dukupuntang", label: "Puskesmas Dukupuntang" },
-      { sheet: "Puskesmas Gebang", label: "Puskesmas Gebang" },
-      { sheet: "Puskesmas Gegesik", label: "Puskesmas Gegesik" },
-      { sheet: "Puskesmas Gembongan", label: "Puskesmas Gembongan" },
-      { sheet: "Puskesmas Gempol", label: "Puskesmas Gempol" },
-      { sheet: "Puskesmas Gunungjati", label: "Puskesmas Gunungjati" },
-      { sheet: "Puskesmas Jagapura", label: "Puskesmas Jagapura" },
-      { sheet: "Puskesmas Jamblang", label: "Puskesmas Jamblang" },
-      { sheet: "Puskesmas Kalimukti", label: "Puskesmas Kalimukti" },
-      { sheet: "Puskesmas Kalimaro", label: "Puskesmas Kalimaro" },
-      { sheet: "Puskesmas Kaliwedi", label: "Puskesmas Kaliwedi" },
-      { sheet: "Puskesmas Kamarang", label: "Puskesmas Kamarang" },
-      { sheet: "Puskesmas Karangsari", label: "Puskesmas Karangsari" },
-      { sheet: "Puskesmas Karangsembung", label: "Puskesmas Karangsembung" },
-      { sheet: "Puskesmas Kedaton", label: "Puskesmas Kedaton" },
-      { sheet: "Puskesmas Kedawung", label: "Puskesmas Kedawung" },
-      { sheet: "Puskesmas Kepuh", label: "Puskesmas Kepuh" },
-      { sheet: "Puskesmas Klangenan", label: "Puskesmas Klangenan" },
-      { sheet: "Puskesmas Kubangdeleg", label: "Puskesmas Kubangdeleg" },
-      { sheet: "Puskesmas Losari", label: "Puskesmas Losari" },
-      { sheet: "Puskesmas Lurah", label: "Puskesmas Lurah" },
-      { sheet: "Puskesmas Mayung", label: "Puskesmas Mayung" },
-      { sheet: "Puskesmas Mundu", label: "Puskesmas Mundu" },
-      { sheet: "Puskesmas Nanggela", label: "Puskesmas Nanggela" },
-      { sheet: "Puskesmas Pabedilan", label: "Puskesmas Pabedilan" },
-      { sheet: "Puskesmas Pabuaran", label: "Puskesmas Pabuaran" },
-      { sheet: "Puskesmas Palimanan", label: "Puskesmas Palimanan" },
-      { sheet: "Puskesmas Pamengkang", label: "Puskesmas Pamengkang" },
-      { sheet: "Puskesmas Pangenan", label: "Puskesmas Pangenan" },
-      { sheet: "Puskesmas Pangkalan", label: "Puskesmas Pangkalan" },
-      { sheet: "Puskesmas Panguragan", label: "Puskesmas Panguragan" },
-      { sheet: "Puskesmas Pasaleman", label: "Puskesmas Pasaleman" },
-      { sheet: "Puskesmas Plered", label: "Puskesmas Plered" },
-      { sheet: "Puskesmas Plumbon", label: "Puskesmas Plumbon" },
-      { sheet: "Puskesmas Sedong", label: "Puskesmas Sedong" },
-      { sheet: "Puskesmas Sendang", label: "Puskesmas Sendang" },
-      { sheet: "Puskesmas Sidamulya", label: "Puskesmas Sidamulya" },
-      { sheet: "Puskesmas Sindangjawa", label: "Puskesmas Sindangjawa" },
-      { sheet: "Puskesmas Sindanglaut", label: "Puskesmas Sindanglaut" },
-      { sheet: "Puskesmas Sumber", label: "Puskesmas Sumber" },
-      { sheet: "Puskesmas Suranenggala", label: "Puskesmas Suranenggala" },
-      { sheet: "Puskesmas Susukan", label: "Puskesmas Susukan" },
-      { sheet: "Puskesmas Susukanlebak", label: "Puskesmas Susukanlebak" },
-      { sheet: "Puskesmas Talun", label: "Puskesmas Talun" },
-      { sheet: "Puskesmas Tegalgubug", label: "Puskesmas Tegalgubug" },
-      { sheet: "Puskesmas Waled", label: "Puskesmas Waled" },
-      { sheet: "Puskesmas Waruroyom", label: "Puskesmas Waruroyom" },
-      { sheet: "Puskesmas Watubelah", label: "Puskesmas Watubelah" },
-      { sheet: "Puskesmas Winong", label: "Puskesmas Winong" }
+    const NAMA_UNIT_STRUKTURAL = [
+      "Sekretariat",
+      "Subbagian Umum dan Kepegawaian",
+      "Subbagian Keuangan dan Aset",
+      "Bidang Pelayanan Kesehatan",
+      "Bidang Sumber Daya Kesehatan",
+      "Bidang Pencegahan dan Pengendalian Penyakit",
+      "Bidang Kesehatan Masyarakat",
+      "UPTD Laboratorium Kesehatan Daerah Kabupaten Cirebon",
+      "UPTD PSC 119"
     ];
+    const NAMA_PUSKESMAS = [
+      "Astanajapura", "Astanalanggar", "Tengahtani", "Babakan", "Beber", "Bunder", "Bangodua", "Cibogo",
+      "Ciledug", "Ciperna", "Ciwaringin", "Dukupuntang", "Gebang", "Gegesik", "Gembongan", "Gempol",
+      "Gunungjati", "Jagapura", "Jamblang", "Kalimukti", "Kalimaro", "Kaliwedi", "Kamarang", "Karangsari",
+      "Karangsembung", "Kedaton", "Kedawung", "Kepuh", "Klangenan", "Kubangdeleg", "Losari", "Lurah",
+      "Mayung", "Mundu", "Nanggela", "Pabedilan", "Pabuaran", "Palimanan", "Pamengkang", "Pangenan",
+      "Pangkalan", "Panguragan", "Pasaleman", "Plered", "Plumbon", "Sedong", "Sendang", "Sidamulya",
+      "Sindangjawa", "Sindanglaut", "Sumber", "Suranenggala", "Susukan", "Susukanlebak", "Talun",
+      "Tegalgubug", "Waled", "Waruroyom", "Watubelah", "Winong"
+    ].map(n => "Puskesmas " + n);
+
+    // Fallback bila daftar sheet gagal diambil dari Apps Script
+    let DAFTAR_UNIT_KERJA = [{ sheet: "Form Responses 1", label: "Semua Unit Kerja (Rekap Utama)" }]
+      .concat(NAMA_UNIT_STRUKTURAL.concat(NAMA_PUSKESMAS).map(n => ({ sheet: n, label: n })));
 
     function inisialisasiDropdownUnit() {
       const selectUnit = document.getElementById("select-unit-kerja");
@@ -483,8 +724,9 @@
         const res = await fetch(`${APPS_SCRIPT_URL}?action=sheets&_=${Date.now()}`);
         const json = await res.json();
         if (json.status === "success" && Array.isArray(json.sheets) && json.sheets.length) {
+          const daftar = json.sheets;
           DAFTAR_UNIT_KERJA = [{ sheet: "Form Responses 1", label: "Semua Unit Kerja (Rekap Utama)" }]
-            .concat(json.sheets.map(n => ({ sheet: n, label: n })));
+            .concat(daftar.map(n => ({ sheet: n, label: n })));
           inisialisasiDropdownUnit();
         }
       } catch (err) {
@@ -639,13 +881,27 @@
       }
     };
 
-    // --- BAGIAN 2: REKAP DATA (SESUAI STRUKTUR BARIS 5 HEADER & KOLOM A-E UNIT KERJA) ---
+    // --- BAGIAN 2: REKAP PEMINJAMAN ARSIP ---
+    // Sheet utama: header baris 1, data mulai baris 2.
+    // Sheet unit kerja: header baris 6, data mulai baris 7 (kolom A = No. otomatis di spreadsheet).
     let dataTamuMentah = [];
     let headerTamu = [];
     let dataTamuTampil = [];
     let kolomAktif = [];
     let currentPage = 1;
     let pageSize = 25;
+
+    const KOLOM_KEMBALI = "Tanggal Pengembalian";
+    const RE_KEMBALI = /kembali|pengembalian/i;
+
+    // dd/MM/yyyy (atau yyyy-MM-dd) -> yyyy-MM-dd untuk <input type="date">
+    function tglKeInput(teks) {
+      const t = String(teks || "").trim();
+      const m = t.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+      if (m) return `${m[3]}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+      const y = t.match(/^\d{4}-\d{2}-\d{2}/);
+      return y ? y[0] : "";
+    }
 
     window.gantiUnitKerja = function() {
       currentPage = 1;
@@ -657,77 +913,96 @@
       const tbody = document.getElementById("tabel-body-tamu");
       const sheetDipilih = document.getElementById("select-unit-kerja").value || "Form Responses 1";
       const isSheetUtama = sheetDipilih.trim().toLowerCase() === "form responses 1";
-      
-      // Di sheet utama data mulai baris 2; di sheet unit kerja header baris 5 & data mulai baris 6
-      const startRowOffset = isSheetUtama ? 2 : 6;
-      const rangeParam = isSheetUtama ? "" : "&range=A5:E";
-      
-      tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-slate-400">Mengambil data unit kerja <b>${sheetDipilih}</b>...</td></tr>`;
 
-      const urlGVIZ = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetDipilih)}${rangeParam}&headers=1&_=${Date.now()}`;
+      tbody.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-slate-400">Mengambil data unit kerja <b>${esc(sheetDipilih)}</b>...</td></tr>`;
 
-      fetch(urlGVIZ, { cache: "no-store" })
-        .then(res => res.text())
-        .then(txt => {
-          const jsonString = txt.substring(txt.indexOf("{"), txt.lastIndexOf("}") + 1);
-          const json = JSON.parse(jsonString);
+      const tampilkanError = (err) => {
+        console.error(err);
+        document.getElementById("tabel-head-tamu").innerHTML = "";
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="p-8 text-center text-rose-600 bg-rose-50">
+              Belum ada data atau sheet <b>"${esc(sheetDipilih)}"</b> belum dibuat di Google Spreadsheet.<br>
+              <span class="text-[11px] text-slate-500">Pastikan hak akses spreadsheet diatur ke: <b>"Siapa saja yang memiliki link sebagai Viewer/Pelihat"</b>.</span>
+            </td>
+          </tr>`;
+      };
 
-          if (json.status === "error") {
-            throw new Error(json.errors?.[0]?.detailed_message || "Sheet tidak ditemukan");
-          }
+      const selesaiMuat = () => {
+        if (kolomAktif.length === 0) kolomAktif = [...headerTamu];
+        buatDaftarCheckboxKolom(headerTamu);
+        isiDropdownSort(headerTamu);
+        terapkanFilterDanSort();
+      };
 
-          const table = json.table;
-          
-          // Di sheet unit kerja, Kolom A (indeks 0) adalah "No." manual yang sudah diganti kolom "No" di tabel web
-          const rawHeaders = table.cols.map(c => c.label && c.label.trim() !== "" ? c.label.trim() : "Kolom");
-          
-          // Header asli sesuai urutan kolom di spreadsheet (dipakai untuk memetakan sel)
-          const headerUntukPeta = isSheetUtama ? rawHeaders : rawHeaders.slice(1);
+      // ===== SHEET UTAMA =====
+      if (isSheetUtama) {
+        const urlGVIZ = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetDipilih)}&headers=1&_=${Date.now()}`;
+        fetch(urlGVIZ, { cache: "no-store" })
+          .then(res => res.text())
+          .then(txt => {
+            const json = JSON.parse(txt.substring(txt.indexOf("{"), txt.lastIndexOf("}") + 1));
+            if (json.status === "error") throw new Error(json.errors?.[0]?.detailed_message || "Sheet tidak ditemukan");
 
-          if (isSheetUtama) {
+            const table = json.table;
+            const rawHeaders = table.cols.map(c => c.label && c.label.trim() !== "" ? c.label.trim() : "Kolom");
             headerTamu = urutkanKolomUtama(rawHeaders);
-          } else {
-            // Ambil Kolom B, C, D, E saja (lewati kolom A "No." agar tidak dobel dengan kolom No di tabel admin)
-            headerTamu = rawHeaders.slice(1);
-          }
 
-          dataTamuMentah = table.rows
-            .map((r, idx) => {
-              const item = { _sheetRowNumber: idx + startRowOffset };
-              const cells = isSheetUtama ? r.c : r.c.slice(1);
-              
-              cells.forEach((cell, cellIdx) => {
-                const colName = headerUntukPeta[cellIdx] || `Kolom_${cellIdx}`;
+            // Bila sheet utama belum punya kolom pengembalian, tampilkan kolom bawaan
+            // (kolom aslinya dibuat otomatis oleh Apps Script saat tanggal pertama kali disimpan)
+            if (!headerTamu.some(h => RE_KEMBALI.test(h))) headerTamu.push(KOLOM_KEMBALI);
+
+            dataTamuMentah = table.rows.map((r, idx) => {
+              const item = { _sheetRowNumber: idx + 2 };
+              r.c.forEach((cell, cellIdx) => {
+                const colName = rawHeaders[cellIdx] || `Kolom_${cellIdx}`;
                 item[colName] = cell ? (cell.f ? cell.f : (cell.v !== null ? cell.v : "")) : "";
               });
               return item;
-            })
-            // Saring baris kosong yang hanya berisi nomor urut manual di Kolom A
-            .filter(row => {
-              if (isSheetUtama) return true;
-              return headerTamu.some(col => String(row[col] || "").trim() !== "");
             });
+            dataTamuMentah.forEach(item => headerTamu.forEach(h => { if (item[h] === undefined) item[h] = ""; }));
+            selesaiMuat();
+          })
+          .catch(tampilkanError);
+        return;
+      }
 
-          if (kolomAktif.length === 0) {
-            kolomAktif = [...headerTamu];
+      // ===== SHEET UNIT KERJA =====
+      // Header baris 6, data mulai baris 7. Kolom A (No.) dilewati.
+      const HEADER_UNIT = ["Jenis Arsip yang Dipinjam", "Nama Pemohon", "Tanggal Peminjaman", KOLOM_KEMBALI];
+      const BARIS_AWAL_DATA = 7;
+
+      const urlCSV = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetDipilih)}&range=A${BARIS_AWAL_DATA}:E&headers=0&_=${Date.now()}`;
+
+      fetch(urlCSV, { cache: "no-store" })
+        .then(res => {
+          if (!res.ok) throw new Error("Gagal mengambil sheet");
+          return res.text();
+        })
+        .then(txt => {
+          let baris = Papa.parse(txt, { skipEmptyLines: false }).data;
+          let barisPertama = BARIS_AWAL_DATA;
+
+          // Pengaman: jika Google tetap menyertakan header sebagai baris pertama, buang
+          if (baris.length && /jenis\s*arsip/i.test(String(baris[0][1] || ""))) {
+            baris = baris.slice(1);
+            barisPertama = BARIS_AWAL_DATA + 1;
           }
 
-          buatDaftarCheckboxKolom(headerTamu);
-          isiDropdownSort(headerTamu);
-          terapkanFilterDanSort();
+          headerTamu = [...HEADER_UNIT];
+          dataTamuMentah = [];
+
+          baris.forEach((row, i) => {
+            const sel = row.slice(1, 5); // buang kolom A, ambil B-E
+            if (!sel.some(v => String(v || "").trim() !== "")) return; // lewati baris kosong
+            const item = { _sheetRowNumber: barisPertama + i };
+            headerTamu.forEach((col, c) => { item[col] = String(sel[c] || "").trim(); });
+            dataTamuMentah.push(item);
+          });
+
+          selesaiMuat();
         })
-        .catch(err => {
-          console.error(err);
-          document.getElementById("tabel-head-tamu").innerHTML = "";
-          tbody.innerHTML = `
-            <tr>
-              <td colspan="6" class="p-8 text-center text-rose-600 bg-rose-50">
-                Belum ada data atau sheet <b>"${sheetDipilih}"</b> belum dibuat di Google Spreadsheet.<br>
-                <span class="text-[11px] text-slate-500">Pastikan hak akses spreadsheet diatur ke: <b>"Siapa saja yang memiliki link sebagai Viewer/Pelihat"</b>.</span>
-              </td>
-            </tr>
-          `;
-        });
+        .catch(tampilkanError);
     };
 
     // Urutan tampilan rekap utama: Jenis Arsip, Nama Pemohon, Tgl Pinjam, Tgl Kembali, lalu kolom lainnya
@@ -753,7 +1028,7 @@
       const select = document.getElementById("select-sort-kolom");
       select.innerHTML = `<option value="default">Waktu Terkini (Bawaan)</option>`;
       kolom.forEach(col => {
-        select.innerHTML += `<option value="${col}">${col}</option>`;
+        select.innerHTML += `<option value="${esc(col)}">${esc(col)}</option>`;
       });
     }
 
@@ -867,7 +1142,7 @@
       trHead.innerHTML = `<th class="p-3.5 pl-5 w-12 text-slate-400">No</th>`;
       headerTamu.forEach(col => {
         if (kolomAktif.includes(col)) {
-          trHead.innerHTML += `<th class="p-3.5 whitespace-nowrap">${col}</th>`;
+          trHead.innerHTML += `<th class="p-3.5 whitespace-nowrap">${esc(col)}</th>`;
         }
       });
       trHead.innerHTML += `<th class="p-3.5 text-center no-print w-24">Aksi</th>`;
@@ -887,8 +1162,20 @@
         
         headerTamu.forEach(col => {
           if (kolomAktif.includes(col)) {
-            const val = row[col] || "-";
-            barisHtml += `<td class="p-3.5 text-slate-700 max-w-xs truncate" title="${val}">${val}</td>`;
+            const val = row[col] || "";
+            if (RE_KEMBALI.test(col)) {
+              // Tanggal pengembalian: diisi admin (bisa dari unit kerja maupun Semua Unit Kerja)
+              barisHtml += `
+                <td class="p-3.5 text-slate-700 whitespace-nowrap">
+                  <input type="date" value="${tglKeInput(val)}"
+                    onchange="window.simpanKembali(${row._sheetRowNumber}, this)"
+                    class="print:hidden border border-slate-200 rounded-lg px-2 py-1 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none">
+                  <span class="hidden print:inline">${esc(val) || "-"}</span>
+                </td>`;
+            } else {
+              const tampil = esc(val || "-");
+              barisHtml += `<td class="p-3.5 text-slate-700 max-w-xs truncate" title="${tampil}">${tampil}</td>`;
+            }
           }
         });
         
@@ -926,8 +1213,8 @@
         const label = document.createElement("label");
         label.className = "flex items-center gap-2 text-xs text-slate-700 cursor-pointer hover:bg-slate-50 p-1 rounded";
         label.innerHTML = `
-          <input type="checkbox" value="${col}" ${kolomAktif.includes(col) ? "checked" : ""} onchange="window.updateKolomTampil(this)" class="rounded text-emerald-600 focus:ring-emerald-500">
-          <span class="truncate">${col}</span>
+          <input type="checkbox" value="${esc(col)}" ${kolomAktif.includes(col) ? "checked" : ""} onchange="window.updateKolomTampil(this)" class="rounded text-emerald-600 focus:ring-emerald-500">
+          <span class="truncate">${esc(col)}</span>
         `;
         box.appendChild(label);
       });
@@ -976,6 +1263,32 @@
       document.body.removeChild(link);
     };
 
+    // Admin mengisi / mengubah / mengosongkan Tanggal Pengembalian
+    window.simpanKembali = async function(barisSheet, input) {
+      const sheetAktif = document.getElementById("select-unit-kerja").value || "Form Responses 1";
+      const tanggal = input.value; // yyyy-mm-dd, kosong = hapus tanggal
+      input.disabled = true;
+
+      const url = `${APPS_SCRIPT_URL}?action=setkembali&row=${barisSheet}&sheet=${encodeURIComponent(sheetAktif)}&tanggal=${encodeURIComponent(tanggal)}&_=${Date.now()}`;
+      try {
+        let hasil = null;
+        try {
+          const res = await fetch(url, { method: "GET" });
+          hasil = await res.json();
+        } catch (corsErr) {
+          await fetch(url, { method: "GET", mode: "no-cors" });
+          await new Promise(r => setTimeout(r, 4000));
+        }
+        if (hasil && hasil.status !== "success") {
+          alert("Gagal menyimpan: " + (hasil.message || "kesalahan tidak diketahui"));
+        }
+        await window.ambilDataGoogleSheet(); // muat ulang agar tampilan sama dengan isi sheet
+      } catch (err) {
+        alert("Gagal menyimpan tanggal pengembalian: " + err.message);
+        input.disabled = false;
+      }
+    };
+
     window.hapusPermanenSheet = async function(barisSheet) {
       const sheetAktif = document.getElementById("select-unit-kerja").value || "Form Responses 1";
 
@@ -1016,6 +1329,873 @@
           btn.disabled = false;
         }
       }
+    };
+
+    // --- BAGIAN 3: KONSULTASI KEARSIPAN ---
+    // Sheet respon Form Konsultasi: header baris 1, data mulai baris 2.
+    // Kolom "Konsultasi yang Diberikan" diisi admin (dibuat otomatis di sheet saat pertama kali disimpan).
+    let kHeader = [];
+    let kDataMentah = [];
+    let kDataTampil = [];
+    let kPage = 1;
+    let kPageSize = "25";
+    let kTanggalCol = null;
+    let kNamaCol = null;
+
+    if (!LINK_FORM_KONSULTASI) {
+      document.getElementById("btn-form-konsul").classList.add("hidden");
+    } else {
+      document.getElementById("btn-form-konsul").classList.remove("hidden");
+    }
+
+    window.bukaFormKonsultasi = function() {
+      if (LINK_FORM_KONSULTASI) window.open(LINK_FORM_KONSULTASI, "_blank");
+    };
+
+    window.bukaSpreadsheetKonsultasi = function() {
+      window.open(`https://docs.google.com/spreadsheets/d/${SPREADSHEET_KONSULTASI_ID}/edit`, "_blank");
+    };
+
+    // Baca tanggal dd/MM/yyyy atau yyyy-MM-dd dari teks
+    function parseTglTeks(teks) {
+      const m = String(teks || "").match(/(\d{1,4})[\/-](\d{1,2})[\/-](\d{1,4})/);
+      if (!m) return null;
+      let d, mo, y;
+      if (m[1].length === 4) { y = parseInt(m[1], 10); mo = parseInt(m[2], 10) - 1; d = parseInt(m[3], 10); }
+      else if (m[3].length === 4) { d = parseInt(m[1], 10); mo = parseInt(m[2], 10) - 1; y = parseInt(m[3], 10); }
+      else return null;
+      const dt = new Date(y, mo, d);
+      return isNaN(dt.getTime()) ? null : dt;
+    }
+
+    // Urutan kolom: Tanggal, Tempat, Nama Pemohon, Permasalahan, (kolom lain), lalu Konsultasi yang Diberikan
+    function susunKolomKonsultasi(headersAsli) {
+      const konsulAsli = headersAsli.find(h => RE_KONSUL.test(h)) || null;
+      const lain = headersAsli.filter(h => h !== konsulAsli && !RE_WAKTU.test(h));
+      const aturan = [/tanggal/i, /tempat|unit|instansi|lokasi/i, /nama/i, /masalah/i];
+      const terpakai = new Set();
+      const hasil = [];
+      aturan.forEach(re => {
+        const i = lain.findIndex((h, n) => !terpakai.has(n) && re.test(h));
+        if (i !== -1) { terpakai.add(i); hasil.push(lain[i]); }
+      });
+      lain.forEach((h, n) => { if (!terpakai.has(n)) hasil.push(h); });
+      hasil.push(konsulAsli || KOLOM_KONSUL);
+      return hasil;
+    }
+
+    window.ambilDataKonsultasi = function() {
+      const tbody = document.getElementById("k-tabel-body");
+      tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-400">Mengambil data konsultasi kearsipan...</td></tr>`;
+
+      const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_KONSULTASI_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_KONSULTASI)}&headers=1&_=${Date.now()}`;
+
+      return fetch(url, { cache: "no-store" })
+        .then(res => res.text())
+        .then(txt => {
+          const json = JSON.parse(txt.substring(txt.indexOf("{"), txt.lastIndexOf("}") + 1));
+          if (json.status === "error") throw new Error(json.errors?.[0]?.detailed_message || "Sheet tidak ditemukan");
+
+          const idxValid = [];
+          const headersAsli = [];
+          json.table.cols.forEach((c, i) => {
+            const lbl = (c.label || "").trim();
+            if (lbl) { idxValid.push(i); headersAsli.push(lbl); }
+          });
+
+          kHeader = susunKolomKonsultasi(headersAsli);
+          kTanggalCol = kHeader.find(h => /tanggal/i.test(h)) || null;
+          kNamaCol = kHeader.find(h => /nama/i.test(h) && !RE_KONSUL.test(h)) || null;
+
+          kDataMentah = json.table.rows
+            .map((r, idx) => {
+              const item = { _row: idx + 2 };
+              idxValid.forEach((ci, n) => {
+                const cell = r.c[ci];
+                item[headersAsli[n]] = cell ? (cell.f ? cell.f : (cell.v !== null ? cell.v : "")) : "";
+              });
+              kHeader.forEach(h => { if (item[h] === undefined) item[h] = ""; });
+              return item;
+            })
+            // buang baris yang seluruh isian Form-nya kosong
+            .filter(item => kHeader.some(h => !RE_KONSUL.test(h) && String(item[h]).trim() !== ""));
+
+          window.terapkanFilterKonsultasi();
+        })
+        .catch(err => {
+          console.error(err);
+          document.getElementById("k-tabel-head").innerHTML = "";
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="8" class="p-8 text-center text-rose-600 bg-rose-50">
+                Belum ada data, atau sheet <b>"${esc(SHEET_KONSULTASI)}"</b> tidak ditemukan di spreadsheet Konsultasi.<br>
+                <span class="text-[11px] text-slate-500">Periksa <b>SPREADSHEET_KONSULTASI_ID</b> dan <b>SHEET_KONSULTASI</b> di admin.html, dan pastikan akses spreadsheet Konsultasi: <b>"Siapa saja yang memiliki link sebagai Viewer/Pelihat"</b>.</span>
+              </td>
+            </tr>`;
+        });
+    };
+
+    window.terapkanFilterKonsultasi = function() {
+      const kw = (document.getElementById("k-input-cari").value || "").toLowerCase();
+      const mulaiVal = document.getElementById("k-input-tgl-mulai").value;
+      const selesaiVal = document.getElementById("k-input-tgl-selesai").value;
+      const arah = document.getElementById("k-select-sort-arah").value;
+      const mulai = mulaiVal ? new Date(mulaiVal + "T00:00:00") : null;
+      const selesai = selesaiVal ? new Date(selesaiVal + "T23:59:59") : null;
+
+      const hasil = kDataMentah.filter(item => {
+        const cocokKw = !kw || kHeader.some(h => String(item[h]).toLowerCase().includes(kw));
+        let cocokTgl = true;
+        if (mulai || selesai) {
+          const d = kTanggalCol ? parseTglTeks(item[kTanggalCol]) : null;
+          if (!d) cocokTgl = false;
+          else {
+            if (mulai && d < mulai) cocokTgl = false;
+            if (selesai && d > selesai) cocokTgl = false;
+          }
+        }
+        return cocokKw && cocokTgl;
+      });
+
+      const kunci = item => {
+        const d = kTanggalCol ? parseTglTeks(item[kTanggalCol]) : null;
+        return d ? d.getTime() : 0;
+      };
+      hasil.sort((a, b) => {
+        const selisih = kunci(a) - kunci(b);
+        const urut = selisih !== 0 ? selisih : a._row - b._row;
+        return arah === "asc" ? urut : -urut;
+      });
+
+      kDataTampil = hasil;
+      renderTabelKonsultasi(hasil);
+    };
+
+    window.resetFilterKonsultasi = function() {
+      document.getElementById("k-input-cari").value = "";
+      document.getElementById("k-input-tgl-mulai").value = "";
+      document.getElementById("k-input-tgl-selesai").value = "";
+      document.getElementById("k-select-sort-arah").value = "desc";
+      kPage = 1;
+      window.terapkanFilterKonsultasi();
+    };
+
+    window.pindahHalamanKonsultasi = function(arah) {
+      kPage += arah;
+      window.terapkanFilterKonsultasi();
+    };
+
+    window.ubahPageSizeKonsultasi = function() {
+      kPageSize = document.getElementById("k-select-page-size").value;
+      kPage = 1;
+      window.terapkanFilterKonsultasi();
+    };
+
+    function renderTabelKonsultasi(data) {
+      const thead = document.getElementById("k-tabel-head");
+      const tbody = document.getElementById("k-tabel-body");
+
+      const total = data.length;
+      const limit = kPageSize === "all" ? (total || 1) : parseInt(kPageSize, 10);
+      const totalPages = Math.ceil(total / limit) || 1;
+      if (kPage > totalPages) kPage = totalPages;
+      if (kPage < 1) kPage = 1;
+
+      const start = (kPage - 1) * limit;
+      const end = start + limit;
+      const halamanIni = data.slice(start, end);
+
+      document.getElementById("k-page-info").innerText = `Menampilkan ${total === 0 ? 0 : start + 1}-${Math.min(end, total)} dari ${total} data (Hal ${kPage}/${totalPages})`;
+      document.getElementById("k-btn-prev").disabled = (kPage <= 1);
+      document.getElementById("k-btn-next").disabled = (kPage >= totalPages);
+
+      thead.innerHTML = `<tr>
+        <th class="p-3.5 pl-5 w-12 text-slate-400">No</th>
+        ${kHeader.map(h => `<th class="p-3.5">${esc(h)}</th>`).join("")}
+        <th class="p-3.5 text-center no-print w-24">Aksi</th>
+      </tr>`;
+
+      tbody.innerHTML = "";
+      if (halamanIni.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="${kHeader.length + 2}" class="p-6 text-center text-slate-400">Belum ada data konsultasi.</td></tr>`;
+        return;
+      }
+
+      halamanIni.forEach((row, idx) => {
+        const tr = document.createElement("tr");
+        tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+        let html = `<td class="p-3.5 pl-5 font-bold text-slate-400 align-top">${start + idx + 1}</td>`;
+
+        kHeader.forEach(h => {
+          const val = row[h] || "";
+          if (RE_KONSUL.test(h)) {
+            // Kolom yang diisi admin. Sudah terisi -> tampil sebagai teks (ubah lewat tombol Edit di kolom Aksi);
+            // belum terisi -> langsung tampil kotak isian + tombol Simpan.
+            const terisi = String(val).trim() !== "";
+            html += `
+              <td class="p-3.5 align-top min-w-[260px]">
+                <div id="k-teks-${row._row}" class="${terisi ? "" : "hidden"} whitespace-pre-wrap break-words text-slate-700">${esc(val)}</div>
+                <div id="k-editor-${row._row}" class="${terisi ? "hidden" : ""}">
+                  <textarea id="k-ta-${row._row}" rows="3" placeholder="Tulis konsultasi yang diberikan..."
+                    class="w-full border border-slate-200 rounded-lg px-2.5 py-2 text-xs bg-white focus:ring-2 focus:ring-emerald-500 outline-none">${esc(val)}</textarea>
+                  <div class="mt-1.5 flex items-center gap-2">
+                    <button id="k-btn-simpan-${row._row}" onclick="window.simpanKonsultasi(${row._row})"
+                      class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3 py-1 rounded-lg transition">Simpan</button>
+                    ${terisi ? `<button onclick="window.batalEditKonsultasi(${row._row})" class="text-slate-500 hover:text-slate-700 font-bold text-xs px-2 py-1 rounded-lg transition">Batal</button>` : ""}
+                  </div>
+                </div>
+              </td>`;
+          } else {
+            html += `<td class="p-3.5 align-top text-slate-700 whitespace-pre-wrap break-words max-w-sm">${esc(val) || "-"}</td>`;
+          }
+        });
+
+        const sudahDiisi = kHeader.some(h => RE_KONSUL.test(h) && String(row[h] || "").trim() !== "");
+        html += `
+          <td class="p-3.5 text-center align-top no-print">
+            <div class="flex flex-col items-center gap-1.5">
+              <button id="k-btn-del-${row._row}" onclick="window.hapusKonsultasi(${row._row})" class="text-rose-600 hover:text-rose-800 font-bold text-xs bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-lg transition">Hapus</button>
+              ${sudahDiisi ? `<button id="k-btn-edit-${row._row}" onclick="window.mulaiEditKonsultasi(${row._row})" class="text-amber-700 hover:text-amber-800 font-bold text-xs bg-amber-50 hover:bg-amber-100 px-2.5 py-1 rounded-lg transition">Edit</button>` : ""}
+            </div>
+          </td>`;
+        tr.innerHTML = html;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Buka kotak isian untuk mengubah konsultasi yang sudah diisi
+    window.mulaiEditKonsultasi = function(barisSheet) {
+      document.getElementById(`k-teks-${barisSheet}`).classList.add("hidden");
+      document.getElementById(`k-editor-${barisSheet}`).classList.remove("hidden");
+      const editBtn = document.getElementById(`k-btn-edit-${barisSheet}`);
+      if (editBtn) editBtn.classList.add("hidden");
+      const ta = document.getElementById(`k-ta-${barisSheet}`);
+      ta.focus();
+      ta.setSelectionRange(ta.value.length, ta.value.length);
+    };
+
+    // Batalkan perubahan: kembalikan isian ke teks tersimpan
+    window.batalEditKonsultasi = function(barisSheet) {
+      const item = kDataMentah.find(x => x._row === barisSheet);
+      const h = kHeader.find(x => RE_KONSUL.test(x));
+      document.getElementById(`k-ta-${barisSheet}`).value = (item && h) ? String(item[h] || "") : "";
+      document.getElementById(`k-editor-${barisSheet}`).classList.add("hidden");
+      document.getElementById(`k-teks-${barisSheet}`).classList.remove("hidden");
+      const editBtn = document.getElementById(`k-btn-edit-${barisSheet}`);
+      if (editBtn) editBtn.classList.remove("hidden");
+    };
+
+    // Admin menyimpan "Konsultasi yang Diberikan" (POST agar teks panjang aman)
+    window.simpanKonsultasi = async function(barisSheet) {
+      const ta = document.getElementById(`k-ta-${barisSheet}`);
+      const btn = document.getElementById(`k-btn-simpan-${barisSheet}`);
+      if (!ta) return;
+
+      const item = kDataMentah.find(x => x._row === barisSheet);
+      const params = { action: "setkonsultasi", row: String(barisSheet), teks: ta.value };
+      if (item && kNamaCol) params.nama = String(item[kNamaCol] || ""); // pengaman: baris harus masih milik pemohon yang sama
+
+      btn.disabled = true;
+      btn.innerText = "Menyimpan...";
+      try {
+        let hasil = null;
+        const body = new URLSearchParams(params);
+        try {
+          const res = await fetch(APPS_SCRIPT_URL, { method: "POST", body });
+          hasil = await res.json();
+        } catch (corsErr) {
+          // Cadangan: tanpa balasan (aman diulang karena hanya menimpa isi sel yang sama)
+          await fetch(APPS_SCRIPT_URL, { method: "POST", body, mode: "no-cors" });
+          await new Promise(r => setTimeout(r, 4000));
+        }
+        if (hasil && hasil.status !== "success") {
+          alert("Gagal menyimpan: " + (hasil.message || "kesalahan tidak diketahui"));
+        }
+        await window.ambilDataKonsultasi();
+      } catch (err) {
+        alert("Gagal menyimpan konsultasi: " + err.message);
+        btn.disabled = false;
+        btn.innerText = "Simpan";
+      }
+    };
+
+    window.hapusKonsultasi = async function(barisSheet) {
+      if (!confirm(`PERINGATAN: Hapus data konsultasi baris ke-${barisSheet} secara PERMANEN?`)) return;
+
+      const btn = document.getElementById(`k-btn-del-${barisSheet}`);
+      if (btn) { btn.innerText = "Menghapus..."; btn.disabled = true; }
+
+      const item = kDataMentah.find(x => x._row === barisSheet);
+      let url = `${APPS_SCRIPT_URL}?action=delkonsultasi&row=${barisSheet}&_=${Date.now()}`;
+      if (item && kNamaCol) url += `&nama=${encodeURIComponent(String(item[kNamaCol] || ""))}`;
+
+      try {
+        let hasil = null;
+        try {
+          const res = await fetch(url, { method: "GET" });
+          hasil = await res.json();
+        } catch (corsErr) {
+          // Balasan tidak terbaca: jangan kirim ulang (bisa menghapus baris lain). Cukup tunggu lalu muat ulang.
+          await new Promise(r => setTimeout(r, 5000));
+        }
+        if (hasil && hasil.status !== "success") {
+          alert("Gagal menghapus: " + (hasil.message || "kesalahan tidak diketahui"));
+        }
+        await window.ambilDataKonsultasi();
+      } catch (err) {
+        alert("Gagal menghapus data konsultasi: " + err.message);
+        if (btn) { btn.innerText = "Hapus"; btn.disabled = false; }
+      }
+    };
+
+    window.unduhCSVKonsultasi = function() {
+      if (!kDataTampil || kDataTampil.length === 0) {
+        alert("Tidak ada data untuk diekspor.");
+        return;
+      }
+      const bersih = kDataTampil.map((item, idx) => {
+        const o = { No: idx + 1 };
+        kHeader.forEach(h => { o[h] = item[h] === undefined || item[h] === null ? "" : item[h]; });
+        return o;
+      });
+      const csvString = Papa.unparse(bersih, { escapeFormulae: true });
+      const blob = new Blob(["\uFEFF" + csvString], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      const tgl = new Date().toISOString().slice(0, 10);
+      link.setAttribute("href", url);
+      link.setAttribute("download", `Konsultasi_Kearsipan_${tgl}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+
+    // --- BAGIAN 4: SURVEI KEPUASAN MASYARAKAT (SKM) ---
+    // Sheet respon Form Survei ada di spreadsheet Konsultasi (tab "Form Responses 2"); header baris 1, data mulai baris 2.
+    // Pilihan jawaban (teks) diubah menjadi angka 1-4, lalu diolah menjadi IKM sesuai Permenpan RB No. 14 Tahun 2017.
+    // Nama tab ini harus sama persis dengan SHEET_SURVEI di kode.gs.
+    const SHEET_SURVEI = "Form Responses 2";
+    // Tempel tautan Google Form Survei di sini (opsional; bila kosong tombol "Google Forms" disembunyikan)
+    const LINK_FORM_SURVEI = "";
+
+    // 9 unsur pelayanan. "cocok" = ciri nama kolom di sheet; "opsi" = teks jawaban untuk nilai 1, 2, 3, 4.
+    const UNSUR_SKM = [
+      { no: 1, nama: "Persyaratan", cocok: /persyaratan/i,
+        opsi: [["tidak sesuai"], ["kurang sesuai"], ["sesuai"], ["sangat sesuai"]] },
+      { no: 2, nama: "Sistem, Mekanisme, dan Prosedur", cocok: /mekanisme|prosedur|alur/i,
+        opsi: [["tidak mudah"], ["kurang mudah"], ["mudah"], ["sangat mudah"]] },
+      { no: 3, nama: "Waktu Penyelesaian", cocok: /waktu|kecepatan/i,
+        opsi: [["tidak cepat"], ["kurang cepat"], ["cepat"], ["sangat cepat"]] },
+      { no: 4, nama: "Biaya / Tarif", cocok: /biaya|tarif/i,
+        opsi: [["sangat mahal"], ["cukup mahal"], ["murah"], ["gratis/sangat sesuai", "gratis", "sangat sesuai"]] },
+      { no: 5, nama: "Produk Spesifikasi Jenis Pelayanan", cocok: /spesifikasi|produk|permohonan awal/i,
+        opsi: [["tidak sesuai"], ["kurang sesuai"], ["sesuai"], ["sangat sesuai"]] },
+      { no: 6, nama: "Kompetensi Pelaksana", cocok: /kompeten|kemampuan/i,
+        opsi: [["tidak kompeten"], ["kurang kompeten"], ["kompeten"], ["sangat kompeten"]] },
+      { no: 7, nama: "Perilaku Pelaksana", cocok: /perilaku|sikap|keramahan/i,
+        opsi: [["tidak sopan & ramah", "tidak sopan dan ramah"], ["kurang sopan & ramah", "kurang sopan dan ramah"], ["sopan & ramah", "sopan dan ramah"], ["sangat sopan & ramah", "sangat sopan dan ramah"]] },
+      { no: 8, nama: "Penanganan Pengaduan, Saran, dan Masukan", cocok: /pengaduan/i,
+        opsi: [["tidak ada"], ["ada tetapi tidak berfungsi", "ada tapi tidak berfungsi"], ["berfungsi kurang maksimal"], ["dikelola dengan baik"]] },
+      { no: 9, nama: "Sarana dan Prasarana", cocok: /sarana|prasarana/i,
+        opsi: [["buruk"], ["cukup"], ["baik"], ["sangat baik"]] }
+    ];
+
+    let sData = [];        // semua respon (setelah dibaca dari sheet)
+    let sTampil = [];      // respon sesudah filter
+    let sHitung = null;    // hasil hitung IKM terakhir
+    let sPage = 1;
+    let sPageSize = "25";
+
+    document.getElementById("btn-form-survei").classList.toggle("hidden", !LINK_FORM_SURVEI);
+    document.getElementById("s-legenda-unsur").innerText = UNSUR_SKM.map(u => `U${u.no} ${u.nama}`).join(" | ");
+
+    window.bukaFormSurvei = function() {
+      if (LINK_FORM_SURVEI) window.open(LINK_FORM_SURVEI, "_blank");
+    };
+    window.bukaSpreadsheetSurvei = function() {
+      window.open(`https://docs.google.com/spreadsheets/d/${SPREADSHEET_KONSULTASI_ID}/edit`, "_blank");
+    };
+
+    // Teks jawaban -> bentuk baku untuk dibandingkan
+    function normOpsi(t) {
+      return String(t === null || t === undefined ? "" : t)
+        .toLowerCase()
+        .replace(/^\s*\d+\s*[\.\)\-:]\s*/, "")   // buang awalan "3. " / "3 - "
+        .replace(/\s*\/\s*/g, "/")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    // Jawaban -> nilai 1-4 (null bila kosong / tidak dikenali)
+    function nilaiSkala(val, unsur) {
+      if (val === null || val === undefined || String(val).trim() === "") return null;
+      if (typeof val === "number") return (val >= 1 && val <= 4) ? Math.round(val) : null;
+      const teks = normOpsi(val);
+      for (let i = 0; i < 4; i++) if (unsur.opsi[i].includes(teks)) return i + 1;
+      const angka = String(val).trim().match(/^([1-4])(?:\D|$)/);
+      if (angka) return parseInt(angka[1], 10);
+      const kandidat = [];
+      unsur.opsi.forEach((alias, i) => alias.forEach(a => kandidat.push({ a: a, nilai: i + 1 })));
+      kandidat.sort((x, y) => y.a.length - x.a.length);   // "sangat baik" dicek sebelum "baik"
+      const hit = kandidat.find(k => teks.includes(k.a));
+      return hit ? hit.nilai : null;
+    }
+
+    // Petakan kolom sheet berdasarkan NAMA header (bukan urutan)
+    function petaKolomSurvei(headers) {
+      const dipakai = new Set();
+      const cari = (daftarRegex) => {
+        for (const re of daftarRegex) {
+          const i = headers.findIndex((h, n) => !dipakai.has(n) && h !== "" && re.test(h));
+          if (i !== -1) { dipakai.add(i); return i; }
+        }
+        return -1;
+      };
+      const p = {};
+      p.waktu = cari([RE_WAKTU]);
+      p.kendala = cari([/kendala layanan|mengalami kendala|kendala khusus/i, /^\s*kendala/i]);
+      p.saran = cari([/saran perbaikan|harapan/i, /^\s*saran/i]);
+      p.jk = cari([/kelamin|gender/i]);
+      p.kategori = cari([/kategori|pengguna layanan/i]);
+      p.layanan = cari([/jenis layanan|layanan.*diterima/i]);
+      p.unsur = UNSUR_SKM.map(u => cari([u.cocok]));
+      p.peringatan = "";
+
+      if (p.unsur.some(i => i === -1)) {
+        // Cadangan: bila nama kolom tidak dikenali, pakai kolom sisa berurutan asalkan tepat 9 kolom
+        const terpakaiLain = new Set([p.waktu, p.kendala, p.saran, p.jk, p.kategori, p.layanan].filter(i => i !== -1));
+        const sisa = headers.map((h, n) => n).filter(n =>
+          headers[n] !== "" && !terpakaiLain.has(n) && !/usia|umur|pendidikan|email|alamat/i.test(headers[n]));
+        if (sisa.length === 9) {
+          p.unsur = sisa;
+        } else {
+          const hilang = UNSUR_SKM.filter((u, k) => p.unsur[k] === -1).map(u => `${u.no}. ${u.nama}`);
+          p.peringatan = `Kolom untuk unsur berikut tidak ditemukan di sheet "${SHEET_SURVEI}": ${hilang.join("; ")}. ` +
+            `Nilai IKM hanya dihitung dari unsur yang ditemukan. Pastikan judul pertanyaan di Google Form memuat kata kunci unsur tersebut.`;
+        }
+      }
+      return p;
+    }
+
+    // Sel waktu gviz -> { kunci (dipakai verifikasi hapus), tgl (Date), teks (tampilan) }
+    function waktuGviz(cell) {
+      if (!cell || cell.v === null || cell.v === undefined || cell.v === "") return { kunci: "", tgl: null, teks: "" };
+      const v = cell.v;
+      const p2 = n => String(n).padStart(2, "0");
+      if (typeof v === "string") {
+        const m = v.match(/^Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+),(\d+))?/);
+        if (m) {
+          const y = +m[1], mo = +m[2], d = +m[3], h = +(m[4] || 0), mi = +(m[5] || 0), s = +(m[6] || 0);
+          return {
+            kunci: `${y}-${p2(mo + 1)}-${p2(d)} ${p2(h)}:${p2(mi)}:${p2(s)}`,
+            tgl: new Date(y, mo, d, h, mi, s),
+            teks: cell.f || `${p2(d)}/${p2(mo + 1)}/${y} ${p2(h)}:${p2(mi)}:${p2(s)}`
+          };
+        }
+        return { kunci: v.trim(), tgl: parseTglTeks(v), teks: cell.f || v };
+      }
+      return { kunci: String(v), tgl: null, teks: cell.f || String(v) };
+    }
+
+    function fmtAngka(n, desimal) {
+      if (n === null || n === undefined || isNaN(n)) return "-";
+      return n.toLocaleString("id-ID", { minimumFractionDigits: desimal, maximumFractionDigits: desimal });
+    }
+
+    // Mutu pelayanan dari nilai IKM konversi (Permenpan RB 14/2017)
+    function mutuSKM(konversi) {
+      if (konversi === null || konversi === undefined) return null;
+      if (konversi >= 88.31) return { huruf: "A", teks: "Sangat Baik", kelas: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+      if (konversi >= 76.61) return { huruf: "B", teks: "Baik", kelas: "bg-sky-50 text-sky-700 border-sky-200" };
+      if (konversi >= 65.00) return { huruf: "C", teks: "Kurang Baik", kelas: "bg-amber-50 text-amber-700 border-amber-200" };
+      return { huruf: "D", teks: "Tidak Baik", kelas: "bg-rose-50 text-rose-700 border-rose-200" };
+    }
+
+    // Hitung NRR per unsur, NRR tertimbang, IKM, dan IKM konversi
+    function hitungSKM(data) {
+      const unsur = UNSUR_SKM.map(u => ({ no: u.no, nama: u.nama, n: 0, jumlah: 0, dist: [0, 0, 0, 0] }));
+      let responden = 0;
+      data.forEach(r => {
+        if (r.rata !== null) responden++;
+        r.nilai.forEach((v, i) => {
+          if (v !== null) { unsur[i].n++; unsur[i].jumlah += v; unsur[i].dist[v - 1]++; }
+        });
+      });
+      const terisi = unsur.filter(u => u.n > 0).length;
+      const bobot = terisi ? 1 / terisi : 0;   // 1/9 bila ke-9 unsur terisi
+      unsur.forEach(u => {
+        u.nrr = u.n ? u.jumlah / u.n : null;
+        u.tertimbang = u.nrr !== null ? u.nrr * bobot : null;
+        u.konversi = u.nrr !== null ? u.nrr * 25 : null;
+        u.mutu = mutuSKM(u.konversi);
+      });
+      const ikm = terisi ? unsur.reduce((a, u) => a + (u.tertimbang || 0), 0) : null;
+      const konversi = ikm !== null ? ikm * 25 : null;
+      return { unsur: unsur, responden: responden, terisi: terisi, ikm: ikm, konversi: konversi, mutu: mutuSKM(konversi) };
+    }
+
+    function isiPilihanSurvei() {
+      const isi = (id, nilai) => {
+        const sel = document.getElementById(id);
+        const dipilih = sel.value;
+        const unik = [...new Set(nilai.filter(v => v !== ""))].sort((a, b) => a.localeCompare(b, "id"));
+        sel.innerHTML = `<option value="">Semua</option>` + unik.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join("");
+        if (unik.includes(dipilih)) sel.value = dipilih;
+      };
+      isi("s-filter-layanan", sData.map(r => r.layanan));
+      isi("s-filter-kategori", sData.map(r => r.kategori));
+      isi("s-filter-jk", sData.map(r => r.jk));
+    }
+
+    window.ambilDataSurvei = function() {
+      const kosongUnsur = (pesan) => `<tr><td colspan="11" class="p-8 text-center text-slate-400">${pesan}</td></tr>`;
+      document.getElementById("s-tabel-unsur").innerHTML = kosongUnsur("Mengambil data survei...");
+      document.getElementById("s-tabel-unsur-foot").innerHTML = "";
+      document.getElementById("s-respon-body").innerHTML = `<tr><td colspan="18" class="p-8 text-center text-slate-400">Mengambil data survei...</td></tr>`;
+
+      const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_KONSULTASI_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_SURVEI)}&headers=1&_=${Date.now()}`;
+
+      return fetch(url, { cache: "no-store" })
+        .then(res => res.text())
+        .then(txt => {
+          const json = JSON.parse(txt.substring(txt.indexOf("{"), txt.lastIndexOf("}") + 1));
+          if (json.status === "error") throw new Error(json.errors?.[0]?.detailed_message || "Sheet tidak ditemukan");
+
+          const headers = json.table.cols.map(c => (c.label || "").trim());
+          const p = petaKolomSurvei(headers);
+          const tidakDikenali = new Set();
+
+          const teksSel = (r, i) => {
+            if (i < 0) return "";
+            const c = r.c[i];
+            if (!c) return "";
+            if (c.f !== null && c.f !== undefined && c.f !== "") return String(c.f);
+            return c.v === null || c.v === undefined ? "" : String(c.v);
+          };
+
+          sData = json.table.rows
+            .map((r, idx) => {
+              const w = waktuGviz(p.waktu >= 0 ? r.c[p.waktu] : null);
+              const nilai = UNSUR_SKM.map((u, k) => {
+                const i = p.unsur[k];
+                const c = (i >= 0 && r.c[i]) ? r.c[i] : null;
+                const mentah = c ? c.v : null;
+                const hasil = nilaiSkala(mentah, u);
+                if (hasil === null && mentah !== null && mentah !== undefined && String(mentah).trim() !== "") {
+                  tidakDikenali.add(`U${u.no}: "${String(mentah).trim()}"`);
+                }
+                return hasil;
+              });
+              const sah = nilai.filter(v => v !== null);
+              return {
+                _row: idx + 2,
+                _kunci: w.kunci,
+                _tgl: w.tgl,
+                waktu: w.teks,
+                jk: teksSel(r, p.jk).trim(),
+                kategori: teksSel(r, p.kategori).trim(),
+                layanan: teksSel(r, p.layanan).trim(),
+                nilai: nilai,
+                rata: sah.length ? sah.reduce((a, b) => a + b, 0) / sah.length : null,
+                kendala: teksSel(r, p.kendala).trim(),
+                saran: teksSel(r, p.saran).trim()
+              };
+            })
+            // buang baris kosong
+            .filter(x => x.rata !== null || x.jk || x.kategori || x.layanan || x.kendala || x.saran);
+
+          const catatan = [];
+          if (p.peringatan) catatan.push(esc(p.peringatan));
+          if (tidakDikenali.size) {
+            catatan.push(`Ada jawaban yang teksnya tidak dikenali sehingga tidak ikut dihitung: ${esc([...tidakDikenali].slice(0, 6).join("; "))}${tidakDikenali.size > 6 ? " ..." : ""}. Samakan teks pilihan di Google Form dengan 4 pilihan standar.`);
+          }
+          const box = document.getElementById("s-peringatan");
+          box.innerHTML = catatan.join("<br>");
+          box.classList.toggle("hidden", catatan.length === 0);
+
+          isiPilihanSurvei();
+          window.terapkanFilterSurvei();
+        })
+        .catch(err => {
+          console.error(err);
+          sData = []; sTampil = []; sHitung = null;
+          document.getElementById("s-tabel-unsur-foot").innerHTML = "";
+          document.getElementById("s-tabel-unsur").innerHTML = kosongUnsur(`Belum ada data, atau sheet <b>"${esc(SHEET_SURVEI)}"</b> tidak ditemukan di spreadsheet Konsultasi.`);
+          document.getElementById("s-respon-head").innerHTML = "";
+          document.getElementById("s-respon-body").innerHTML = `
+            <tr>
+              <td colspan="18" class="p-8 text-center text-rose-600 bg-rose-50">
+                Belum ada data, atau sheet <b>"${esc(SHEET_SURVEI)}"</b> tidak ditemukan.<br>
+                <span class="text-[11px] text-slate-500">Periksa <b>SPREADSHEET_KONSULTASI_ID</b> dan <b>SHEET_SURVEI</b> di admin.html, dan pastikan akses spreadsheet: <b>"Siapa saja yang memiliki link sebagai Viewer/Pelihat"</b>.</span>
+              </td>
+            </tr>`;
+          renderRingkasanSurvei(hitungSKM([]));
+        });
+    };
+
+    function periodeSurveiTeks() {
+      const tm = document.getElementById("s-tgl-mulai").value;
+      const ts = document.getElementById("s-tgl-selesai").value;
+      const fmtTgl = v => v.split("-").reverse().join("/");
+      const bagian = [];
+      if (tm || ts) bagian.push(`Periode: ${tm ? fmtTgl(tm) : "awal"} s.d. ${ts ? fmtTgl(ts) : "sekarang"}`);
+      else bagian.push("Periode: semua data");
+      const fl = document.getElementById("s-filter-layanan").value;
+      const fk = document.getElementById("s-filter-kategori").value;
+      const fjk = document.getElementById("s-filter-jk").value;
+      if (fl) bagian.push(`Jenis Layanan: ${fl}`);
+      if (fk) bagian.push(`Kategori Pengguna: ${fk}`);
+      if (fjk) bagian.push(`Jenis Kelamin: ${fjk}`);
+      return bagian.join(" | ");
+    }
+
+    window.terapkanFilterSurvei = function() {
+      const tmVal = document.getElementById("s-tgl-mulai").value;
+      const tsVal = document.getElementById("s-tgl-selesai").value;
+      const mulai = tmVal ? new Date(tmVal + "T00:00:00") : null;
+      const selesai = tsVal ? new Date(tsVal + "T23:59:59") : null;
+      const fl = document.getElementById("s-filter-layanan").value;
+      const fk = document.getElementById("s-filter-kategori").value;
+      const fjk = document.getElementById("s-filter-jk").value;
+      const arah = document.getElementById("s-sort-arah").value;
+
+      const hasil = sData.filter(r => {
+        if (fl && r.layanan !== fl) return false;
+        if (fk && r.kategori !== fk) return false;
+        if (fjk && r.jk !== fjk) return false;
+        if (mulai || selesai) {
+          if (!r._tgl) return false;
+          if (mulai && r._tgl < mulai) return false;
+          if (selesai && r._tgl > selesai) return false;
+        }
+        return true;
+      });
+
+      sHitung = hitungSKM(hasil);
+      renderRingkasanSurvei(sHitung);
+      renderTabelUnsurSurvei(sHitung);
+
+      const kunci = r => r._tgl ? r._tgl.getTime() : 0;
+      sTampil = [...hasil].sort((a, b) => {
+        const d = kunci(a) - kunci(b);
+        const urut = d !== 0 ? d : a._row - b._row;
+        return arah === "asc" ? urut : -urut;
+      });
+      renderResponSurvei(sTampil);
+    };
+
+    window.resetFilterSurvei = function() {
+      ["s-tgl-mulai", "s-tgl-selesai", "s-filter-layanan", "s-filter-kategori", "s-filter-jk"].forEach(id => {
+        document.getElementById(id).value = "";
+      });
+      document.getElementById("s-sort-arah").value = "desc";
+      sPage = 1;
+      window.terapkanFilterSurvei();
+    };
+
+    function renderRingkasanSurvei(h) {
+      document.getElementById("s-responden").innerText = h.responden ? String(h.responden) : "0";
+      document.getElementById("s-ikm").innerText = fmtAngka(h.ikm, 3);
+      document.getElementById("s-konversi").innerText = fmtAngka(h.konversi, 2);
+      const huruf = document.getElementById("s-mutu-huruf");
+      const teks = document.getElementById("s-mutu-teks");
+      if (h.mutu) {
+        huruf.className = `w-11 h-11 rounded-xl border flex items-center justify-center text-2xl font-black ${h.mutu.kelas}`;
+        huruf.innerText = h.mutu.huruf;
+        teks.innerText = h.mutu.teks;
+      } else {
+        huruf.className = "w-11 h-11 rounded-xl border border-slate-200 bg-slate-50 text-slate-400 flex items-center justify-center text-2xl font-black";
+        huruf.innerText = "-";
+        teks.innerText = "Belum ada data";
+      }
+    }
+
+    function badgeMutu(m) {
+      if (!m) return `<span class="text-slate-400">-</span>`;
+      return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[11px] font-bold whitespace-nowrap ${m.kelas}">${m.huruf} - ${m.teks}</span>`;
+    }
+
+    function renderTabelUnsurSurvei(h) {
+      const tbody = document.getElementById("s-tabel-unsur");
+      const tfoot = document.getElementById("s-tabel-unsur-foot");
+      if (!h.responden) {
+        tbody.innerHTML = `<tr><td colspan="11" class="p-8 text-center text-slate-400">Belum ada respon pada filter ini.</td></tr>`;
+        tfoot.innerHTML = "";
+        return;
+      }
+      tbody.innerHTML = h.unsur.map(u => {
+        const lebar = u.nrr !== null ? Math.max(0, Math.min(100, u.nrr / 4 * 100)) : 0;
+        const tip = u.nrr !== null ? `Unsur ${u.no} ${u.nama}: NRR ${fmtAngka(u.nrr, 3)} dari 4 (${u.n} responden)` : `Unsur ${u.no}: belum ada data`;
+        return `
+          <tr class="hover:bg-slate-50 transition">
+            <td class="p-3 pl-5 font-bold text-slate-400">${u.no}</td>
+            <td class="p-3 text-slate-800 font-semibold">${esc(u.nama)}</td>
+            <td class="p-3 text-center tabular-nums">${u.n}</td>
+            ${u.dist.map(d => `<td class="p-2 text-center tabular-nums text-slate-600">${d}</td>`).join("")}
+            <td class="p-3" title="${esc(tip)}">
+              <div class="flex items-center gap-2">
+                <span class="w-14 font-bold text-slate-800 tabular-nums">${fmtAngka(u.nrr, 3)}</span>
+                <div class="skm-bar flex-1 min-w-[90px] h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div class="skm-bar h-2 bg-emerald-600 rounded-r" style="width:${lebar}%"></div>
+                </div>
+              </div>
+            </td>
+            <td class="p-3 text-right tabular-nums">${fmtAngka(u.tertimbang, 3)}</td>
+            <td class="p-3 text-right tabular-nums">${fmtAngka(u.konversi, 2)}</td>
+            <td class="p-3 text-center">${badgeMutu(u.mutu)}</td>
+          </tr>`;
+      }).join("");
+
+      tfoot.innerHTML = `
+        <tr>
+          <td colspan="2" class="p-3 pl-5 uppercase tracking-wider">IKM Unit Pelayanan</td>
+          <td class="p-3 text-center tabular-nums">${h.responden}</td>
+          <td colspan="5"></td>
+          <td class="p-3 text-right tabular-nums">${fmtAngka(h.ikm, 3)}</td>
+          <td class="p-3 text-right tabular-nums">${fmtAngka(h.konversi, 2)}</td>
+          <td class="p-3 text-center">${badgeMutu(h.mutu)}</td>
+        </tr>`;
+    }
+
+    function renderResponSurvei(data) {
+      const thead = document.getElementById("s-respon-head");
+      const tbody = document.getElementById("s-respon-body");
+
+      const total = data.length;
+      const limit = sPageSize === "all" ? (total || 1) : parseInt(sPageSize, 10);
+      const totalPages = Math.ceil(total / limit) || 1;
+      if (sPage > totalPages) sPage = totalPages;
+      if (sPage < 1) sPage = 1;
+      const start = (sPage - 1) * limit;
+      const end = start + limit;
+      const halamanIni = data.slice(start, end);
+
+      document.getElementById("s-page-info").innerText = `Menampilkan ${total === 0 ? 0 : start + 1}-${Math.min(end, total)} dari ${total} data (Hal ${sPage}/${totalPages})`;
+      document.getElementById("s-btn-prev").disabled = (sPage <= 1);
+      document.getElementById("s-btn-next").disabled = (sPage >= totalPages);
+
+      thead.innerHTML = `<tr>
+        <th class="p-3 pl-5 w-10 text-slate-400">No</th>
+        <th class="p-3 whitespace-nowrap">Waktu</th>
+        <th class="p-3 whitespace-nowrap">Jenis Kelamin</th>
+        <th class="p-3 whitespace-nowrap">Kategori Pengguna</th>
+        <th class="p-3 whitespace-nowrap">Jenis Layanan</th>
+        ${UNSUR_SKM.map(u => `<th class="p-2 text-center" title="${esc(u.nama)}">U${u.no}</th>`).join("")}
+        <th class="p-3 text-center whitespace-nowrap">Rata-rata</th>
+        <th class="p-3">Kendala</th>
+        <th class="p-3">Saran</th>
+        <th class="p-3 text-center w-24 sticky right-0 bg-slate-50">Aksi</th>
+      </tr>`;
+
+      if (halamanIni.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="18" class="p-6 text-center text-slate-400">Belum ada data respon survei.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = halamanIni.map((r, idx) => `
+        <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+          <td class="p-3 pl-5 font-bold text-slate-400 align-top">${start + idx + 1}</td>
+          <td class="p-3 align-top whitespace-nowrap text-slate-700">${esc(r.waktu) || "-"}</td>
+          <td class="p-3 align-top text-slate-700">${esc(r.jk) || "-"}</td>
+          <td class="p-3 align-top text-slate-700">${esc(r.kategori) || "-"}</td>
+          <td class="p-3 align-top text-slate-700">${esc(r.layanan) || "-"}</td>
+          ${r.nilai.map(v => `<td class="p-2 align-top text-center tabular-nums ${v === null ? "text-slate-300" : "text-slate-700"}">${v === null ? "-" : v}</td>`).join("")}
+          <td class="p-3 align-top text-center font-bold tabular-nums">${fmtAngka(r.rata, 2)}</td>
+          <td class="p-3 align-top text-slate-700 whitespace-pre-wrap break-words max-w-[220px]">${esc(r.kendala) || "-"}</td>
+          <td class="p-3 align-top text-slate-700 whitespace-pre-wrap break-words max-w-[220px]">${esc(r.saran) || "-"}</td>
+          <td class="p-3 text-center align-top sticky right-0 bg-white">
+            <button id="s-btn-del-${r._row}" onclick="window.hapusSurvei(${r._row})" class="text-rose-600 hover:text-rose-800 font-bold text-xs bg-rose-50 hover:bg-rose-100 px-2.5 py-1 rounded-lg transition">Hapus</button>
+          </td>
+        </tr>`).join("");
+    }
+
+    window.pindahHalamanSurvei = function(arah) {
+      sPage += arah;
+      renderResponSurvei(sTampil);
+    };
+
+    window.ubahPageSizeSurvei = function() {
+      sPageSize = document.getElementById("s-page-size").value;
+      sPage = 1;
+      renderResponSurvei(sTampil);
+    };
+
+    window.hapusSurvei = async function(barisSheet) {
+      if (!confirm(`PERINGATAN: Hapus respon survei baris ke-${barisSheet} secara PERMANEN? Nilai IKM akan dihitung ulang.`)) return;
+
+      const btn = document.getElementById(`s-btn-del-${barisSheet}`);
+      if (btn) { btn.innerText = "Menghapus..."; btn.disabled = true; }
+
+      const item = sData.find(x => x._row === barisSheet);
+      // ts = penanda waktu respon: server menolak bila baris tersebut sudah bergeser/berubah
+      const url = `${APPS_SCRIPT_URL}?action=delsurvei&row=${barisSheet}&ts=${encodeURIComponent(item ? item._kunci : "")}&_=${Date.now()}`;
+
+      try {
+        let hasil = null;
+        try {
+          const res = await fetch(url, { method: "GET" });
+          hasil = await res.json();
+        } catch (corsErr) {
+          // Balasan tidak terbaca: jangan kirim ulang (bisa menghapus baris lain). Cukup tunggu lalu muat ulang.
+          await new Promise(r => setTimeout(r, 5000));
+        }
+        if (hasil && hasil.status !== "success") {
+          alert("Gagal menghapus: " + (hasil.message || "kesalahan tidak diketahui"));
+        }
+        await window.ambilDataSurvei();
+      } catch (err) {
+        alert("Gagal menghapus respon survei: " + err.message);
+        if (btn) { btn.innerText = "Hapus"; btn.disabled = false; }
+      }
+    };
+
+    function unduhCSV(csvString, namaFile) {
+      const blob = new Blob(["﻿" + csvString], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.setAttribute("href", URL.createObjectURL(blob));
+      link.setAttribute("download", namaFile);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    window.unduhCSVResponSurvei = function() {
+      if (!sTampil || sTampil.length === 0) { alert("Tidak ada data untuk diekspor."); return; }
+      const baris = sTampil.map((r, i) => {
+        const o = { "No": i + 1, "Waktu": r.waktu, "Jenis Kelamin": r.jk, "Kategori Pengguna": r.kategori, "Jenis Layanan": r.layanan };
+        UNSUR_SKM.forEach((u, k) => { o[`${u.no}. ${u.nama}`] = r.nilai[k] === null ? "" : r.nilai[k]; });
+        o["Rata-rata"] = r.rata === null ? "" : Number(r.rata.toFixed(2));
+        o["Kendala"] = r.kendala;
+        o["Saran"] = r.saran;
+        return o;
+      });
+      unduhCSV(Papa.unparse(baris, { escapeFormulae: true }), `Respon_Survei_Kepuasan_${new Date().toISOString().slice(0, 10)}.csv`);
+    };
+
+    window.unduhCSVRekapSurvei = function() {
+      const h = sHitung;
+      if (!h || !h.responden) { alert("Tidak ada data untuk diekspor."); return; }
+      const baris = [
+        ["REKAP SURVEI KEPUASAN MASYARAKAT (SKM) LAYANAN KEARSIPAN"],
+        [periodeSurveiTeks()],
+        ["Jumlah Responden", h.responden],
+        [],
+        ["No", "Unsur Pelayanan", "Jumlah Responden", "Jawaban Nilai 1", "Jawaban Nilai 2", "Jawaban Nilai 3", "Jawaban Nilai 4", "NRR", "NRR Tertimbang", "Nilai Konversi", "Mutu"]
+      ];
+      h.unsur.forEach(u => {
+        baris.push([
+          u.no, u.nama, u.n, u.dist[0], u.dist[1], u.dist[2], u.dist[3],
+          u.nrr === null ? "" : Number(u.nrr.toFixed(3)),
+          u.tertimbang === null ? "" : Number(u.tertimbang.toFixed(3)),
+          u.konversi === null ? "" : Number(u.konversi.toFixed(2)),
+          u.mutu ? `${u.mutu.huruf} - ${u.mutu.teks}` : ""
+        ]);
+      });
+      baris.push([]);
+      baris.push(["IKM", Number(h.ikm.toFixed(3))]);
+      baris.push(["IKM Konversi", Number(h.konversi.toFixed(2))]);
+      baris.push(["Mutu Pelayanan", `${h.mutu.huruf} - ${h.mutu.teks}`]);
+      unduhCSV(Papa.unparse(baris, { escapeFormulae: true }), `Rekap_IKM_Survei_Kepuasan_${new Date().toISOString().slice(0, 10)}.csv`);
     };
   </script>
 </body>
