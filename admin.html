@@ -47,7 +47,9 @@
           <input type="password" id="login-password" placeholder="••••••••" required class="w-full border border-slate-200 p-2.5 rounded-xl text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
         </div>
         <p id="login-error" class="text-xs text-rose-600 hidden font-medium"></p>
+        <p id="lupa-info" class="text-xs text-emerald-700 hidden font-medium"></p>
         <button type="submit" id="btn-submit-login" class="w-full bg-emerald-600 text-white py-2.5 rounded-xl font-bold hover:bg-emerald-700 transition shadow-sm shadow-emerald-200">Masuk</button>
+        <button type="button" id="btn-lupa" class="w-full text-xs text-emerald-700 font-bold hover:underline disabled:opacity-50 disabled:no-underline">Lupa kata sandi?</button>
       </form>
     </div>
   </div>
@@ -207,7 +209,7 @@
               </svg>
               Google Forms
             </button> 
-            <button onclick="window.open('https://docs.google.com/spreadsheets/d/1AnQCfBsqaX1LOZLsBd4pPkc3q4tiQD1EiB4wOVXjXxo/edit?usp=sharing', '_blank')"
+            <button onclick="bukaSpreadsheet('tamu')"
                 class="inline-flex items-center gap-2 bg-green-700 hover:bg-green-800 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition shadow-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M19 2H5a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zM8 18H5v-3h3v3zm0-5H5v-3h3v3zm0-5H5V5h3v3zm5 10h-3v-3h3v3zm0-5h-3v-3h3v3zm0-5h-3V5h3v3zm6 10h-4v-3h4v3zm0-5h-4v-3h4v3zm0-5h-4V5h4v3z"/>
@@ -629,8 +631,9 @@
       signInWithEmailAndPassword, 
       signOut, 
       onAuthStateChanged,
-      setPersistence, 
-      browserSessionPersistence 
+      sendPasswordResetEmail,
+      setPersistence,
+      browserSessionPersistence
     } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
     import { getFirestore, collection, addDoc, updateDoc, getDocs, deleteDoc, doc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -650,13 +653,31 @@
 
     setPersistence(auth, browserSessionPersistence);
 
-    // ID SPREADSHEET & APPS SCRIPT URL
-    const SPREADSHEET_ID = "1AnQCfBsqaX1LOZLsBd4pPkc3q4tiQD1EiB4wOVXjXxo";
+    // APPS SCRIPT URL. ID spreadsheet TIDAK lagi di sini: semua baca/tulis lewat Apps Script
+    // yang memverifikasi token login admin (lihat kode.gs).
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyuN3e5lZU9chPWUqWu7IueylE60hLNpyYulrQAu26W1riX-7lkxeHBryEUeRBLNCW4/exec";
 
-    // KONSULTASI KEARSIPAN (spreadsheet TERPISAH dari rekap tamu)
-    // ID spreadsheet dari URL: docs.google.com/spreadsheets/d/<ID>/edit (harus sama dengan kode.gs)
-    const SPREADSHEET_KONSULTASI_ID = "1z8jnXmR6DBZ3PjsXPaLlr8VT_GkC0CHucqTmGpn1gsc";
+    // Panggil Apps Script dengan token login. TIDAK PERNAH mengirim ulang otomatis (aman untuk hapus).
+    async function panggilApi(params) {
+      const user = auth.currentUser;
+      if (!user) throw new Error("Sesi login habis. Silakan login ulang.");
+      const token = await user.getIdToken();
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: "POST",
+        body: new URLSearchParams({ ...params, token })
+      });
+      let json;
+      try { json = await res.json(); }
+      catch (e) { throw new Error("Balasan server tidak terbaca. Periksa deploy Apps Script (akses: Siapa saja)."); }
+      if (!json || json.status !== "success") {
+        const err = new Error((json && json.message) || "Kesalahan tidak diketahui");
+        err.code = json && json.code;
+        throw err;
+      }
+      return json;
+    }
+
+    // KONSULTASI KEARSIPAN (spreadsheet TERPISAH dari rekap tamu; ID-nya ada di kode.gs)
     // Nama tab respon Form Konsultasi (harus sama persis dengan SHEET_KONSULTASI di kode.gs)
     const SHEET_KONSULTASI = "Form Responses 1";
     // Tempel tautan Google Form Konsultasi di sini (opsional; bila kosong tombol "Google Forms" disembunyikan)
@@ -664,6 +685,20 @@
     const KOLOM_KONSUL = "Konsultasi yang Diberikan";
     const RE_KONSUL = /yang\s+diberikan|konsultasi\s+diberikan|tanggapan/i;
     const RE_WAKTU = /timestamp|cap\s*waktu/i;
+
+    // Buka spreadsheet: tautannya diminta dari Apps Script (hanya admin yang bisa melihatnya)
+    window.bukaSpreadsheet = async function(jenis) {
+      const w = window.open("", "_blank"); // dibuka dulu agar tidak diblokir pop-up
+      try {
+        const j = await panggilApi({ action: "tautan" });
+        const url = jenis === "konsul" ? j.konsul : j.tamu;
+        if (!url) throw new Error("Tautan tidak tersedia");
+        if (w) w.location.href = url; else window.location.href = url;
+      } catch (err) {
+        if (w) w.close();
+        alert("Gagal membuka spreadsheet: " + err.message);
+      }
+    };
 
     // Amankan teks dari Form (publik) sebelum dimasukkan ke HTML
     function esc(v) {
@@ -721,9 +756,8 @@
     // Ambil semua tab unit kerja otomatis dari Spreadsheet (via Apps Script)
     async function muatDaftarUnitDinamis() {
       try {
-        const res = await fetch(`${APPS_SCRIPT_URL}?action=sheets&_=${Date.now()}`);
-        const json = await res.json();
-        if (json.status === "success" && Array.isArray(json.sheets) && json.sheets.length) {
+        const json = await panggilApi({ action: "sheets" });
+        if (Array.isArray(json.sheets) && json.sheets.length) {
           const daftar = json.sheets;
           DAFTAR_UNIT_KERJA = [{ sheet: "Form Responses 1", label: "Semua Unit Kerja (Rekap Utama)" }]
             .concat(daftar.map(n => ({ sheet: n, label: n })));
@@ -733,7 +767,6 @@
         console.warn("Daftar unit dinamis gagal dimuat, memakai daftar bawaan.", err);
       }
     }
-    muatDaftarUnitDinamis();
 
     onAuthStateChanged(auth, (user) => {
       if (user) {
@@ -741,6 +774,7 @@
         document.getElementById("admin-content").classList.remove("hidden");
         document.getElementById("user-display").innerText = user.email;
         muatDataLinks();
+        muatDaftarUnitDinamis();
       } else {
         document.getElementById("auth-box").classList.remove("hidden");
         document.getElementById("admin-content").classList.add("hidden");
@@ -769,6 +803,58 @@
         btn.innerText = "Masuk";
         btn.disabled = false;
       }
+    });
+
+    // Lupa kata sandi: Firebase mengirim email berisi tautan reset
+    document.getElementById("btn-lupa").addEventListener("click", async () => {
+      const email = document.getElementById("login-email").value.trim();
+      const errBox = document.getElementById("login-error");
+      const info = document.getElementById("lupa-info");
+      const btn = document.getElementById("btn-lupa");
+
+      errBox.classList.add("hidden");
+      info.classList.add("hidden");
+
+      if (!/^\S+@\S+\.\S+$/.test(email)) {
+        errBox.innerText = "Isi email dengan benar dulu, lalu klik Lupa kata sandi.";
+        errBox.classList.remove("hidden");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = "Mengirim...";
+      try {
+        await sendPasswordResetEmail(auth, email);
+      } catch (err) {
+        console.warn("Reset kata sandi:", err.code);
+        if (err.code === "auth/too-many-requests" || err.code === "auth/network-request-failed") {
+          errBox.innerText = err.code === "auth/network-request-failed"
+            ? "Koneksi gagal. Periksa internet Anda lalu coba lagi."
+            : "Terlalu banyak permintaan. Coba lagi beberapa menit lagi.";
+          errBox.classList.remove("hidden");
+          btn.disabled = false;
+          btn.innerText = "Lupa kata sandi?";
+          return;
+        }
+        // Kesalahan lain (mis. email tidak terdaftar) sengaja tidak ditampilkan,
+        // supaya orang luar tidak bisa menebak email mana yang terdaftar.
+      }
+      info.innerText = "Jika email terdaftar, tautan reset kata sandi sudah dikirim. Periksa inbox dan folder spam.";
+      info.classList.remove("hidden");
+
+      // Jeda 30 detik sebelum bisa kirim ulang
+      let sisa = 30;
+      btn.innerText = `Kirim ulang dalam ${sisa} dtk`;
+      const timer = setInterval(() => {
+        sisa--;
+        if (sisa <= 0) {
+          clearInterval(timer);
+          btn.disabled = false;
+          btn.innerText = "Lupa kata sandi?";
+        } else {
+          btn.innerText = `Kirim ulang dalam ${sisa} dtk`;
+        }
+      }, 1000);
     });
 
     document.getElementById("btn-logout").addEventListener("click", () => {
@@ -922,8 +1008,8 @@
         tbody.innerHTML = `
           <tr>
             <td colspan="6" class="p-8 text-center text-rose-600 bg-rose-50">
-              Belum ada data atau sheet <b>"${esc(sheetDipilih)}"</b> belum dibuat di Google Spreadsheet.<br>
-              <span class="text-[11px] text-slate-500">Pastikan hak akses spreadsheet diatur ke: <b>"Siapa saja yang memiliki link sebagai Viewer/Pelihat"</b>.</span>
+              Gagal memuat sheet <b>"${esc(sheetDipilih)}"</b>: ${esc(err && err.message)}<br>
+              <span class="text-[11px] text-slate-500">Pastikan akun Anda terdaftar di <b>ADMIN_EMAILS</b> (kode.gs) dan Apps Script sudah di-deploy ulang.</span>
             </td>
           </tr>`;
       };
@@ -937,13 +1023,8 @@
 
       // ===== SHEET UTAMA =====
       if (isSheetUtama) {
-        const urlGVIZ = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetDipilih)}&headers=1&_=${Date.now()}`;
-        fetch(urlGVIZ, { cache: "no-store" })
-          .then(res => res.text())
-          .then(txt => {
-            const json = JSON.parse(txt.substring(txt.indexOf("{"), txt.lastIndexOf("}") + 1));
-            if (json.status === "error") throw new Error(json.errors?.[0]?.detailed_message || "Sheet tidak ditemukan");
-
+        return panggilApi({ action: "baca", sumber: "tamu", sheet: sheetDipilih, header: "1" })
+          .then(json => {
             const table = json.table;
             const rawHeaders = table.cols.map(c => c.label && c.label.trim() !== "" ? c.label.trim() : "Kolom");
             headerTamu = urutkanKolomUtama(rawHeaders);
@@ -964,7 +1045,6 @@
             selesaiMuat();
           })
           .catch(tampilkanError);
-        return;
       }
 
       // ===== SHEET UNIT KERJA =====
@@ -972,22 +1052,17 @@
       const HEADER_UNIT = ["Jenis Arsip yang Dipinjam", "Nama Pemohon", "Tanggal Peminjaman", KOLOM_KEMBALI];
       const BARIS_AWAL_DATA = 7;
 
-      const urlCSV = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheetDipilih)}&range=A${BARIS_AWAL_DATA}:E&headers=0&_=${Date.now()}`;
-
-      fetch(urlCSV, { cache: "no-store" })
-        .then(res => {
-          if (!res.ok) throw new Error("Gagal mengambil sheet");
-          return res.text();
-        })
-        .then(txt => {
-          let baris = Papa.parse(txt, { skipEmptyLines: false }).data;
-          let barisPertama = BARIS_AWAL_DATA;
-
-          // Pengaman: jika Google tetap menyertakan header sebagai baris pertama, buang
-          if (baris.length && /jenis\s*arsip/i.test(String(baris[0][1] || ""))) {
-            baris = baris.slice(1);
-            barisPertama = BARIS_AWAL_DATA + 1;
-          }
+      return panggilApi({ action: "baca", sumber: "tamu", sheet: sheetDipilih, header: "0", dari: String(BARIS_AWAL_DATA), kolom: "5" })
+        .then(json => {
+          const baris = json.table.rows.map(r => {
+            const sel = [];
+            for (let c = 0; c < 5; c++) {
+              const cell = r.c[c];
+              sel.push(cell ? (cell.f ? cell.f : (cell.v !== null && cell.v !== undefined ? cell.v : "")) : "");
+            }
+            return sel;
+          });
+          const barisPertama = BARIS_AWAL_DATA;
 
           headerTamu = [...HEADER_UNIT];
           dataTamuMentah = [];
@@ -1269,24 +1344,13 @@
       const tanggal = input.value; // yyyy-mm-dd, kosong = hapus tanggal
       input.disabled = true;
 
-      const url = `${APPS_SCRIPT_URL}?action=setkembali&row=${barisSheet}&sheet=${encodeURIComponent(sheetAktif)}&tanggal=${encodeURIComponent(tanggal)}&_=${Date.now()}`;
       try {
-        let hasil = null;
-        try {
-          const res = await fetch(url, { method: "GET" });
-          hasil = await res.json();
-        } catch (corsErr) {
-          await fetch(url, { method: "GET", mode: "no-cors" });
-          await new Promise(r => setTimeout(r, 4000));
-        }
-        if (hasil && hasil.status !== "success") {
-          alert("Gagal menyimpan: " + (hasil.message || "kesalahan tidak diketahui"));
-        }
-        await window.ambilDataGoogleSheet(); // muat ulang agar tampilan sama dengan isi sheet
+        await panggilApi({ action: "setkembali", row: String(barisSheet), sheet: sheetAktif, tanggal: tanggal });
       } catch (err) {
         alert("Gagal menyimpan tanggal pengembalian: " + err.message);
-        input.disabled = false;
       }
+      await window.ambilDataGoogleSheet(); // muat ulang agar tampilan sama dengan isi sheet
+      input.disabled = false;
     };
 
     window.hapusPermanenSheet = async function(barisSheet) {
@@ -1302,33 +1366,14 @@
         btn.disabled = true;
       }
 
-      const urlEndpoint = `${APPS_SCRIPT_URL}?action=delete&row=${barisSheet}&sheet=${encodeURIComponent(sheetAktif)}&_=${Date.now()}`;
       try {
-        let hasil = null;
-        try {
-          // Mode normal: bisa membaca balasan server (konfirmasi nyata)
-          const res = await fetch(urlEndpoint, { method: "GET" });
-          hasil = await res.json();
-        } catch (corsErr) {
-          // Cadangan: tanpa balasan; tunggu lebih lama agar skrip selesai sebelum memuat ulang
-          await fetch(urlEndpoint, { method: "GET", mode: "no-cors" });
-          await new Promise(r => setTimeout(r, 5000));
-        }
-
-        if (hasil && hasil.status !== "success") {
-          alert("Gagal menghapus: " + (hasil.message || "kesalahan tidak diketahui"));
-        } else if (hasil) {
-          const info = `Data baris ke-${barisSheet} di sheet "${sheetAktif}" berhasil dihapus.`;
-          alert(info);
-        }
-        await window.ambilDataGoogleSheet();
+        await panggilApi({ action: "delete", row: String(barisSheet), sheet: sheetAktif });
+        alert(`Data baris ke-${barisSheet} di sheet "${sheetAktif}" berhasil dihapus.`);
       } catch (err) {
-        alert("Gagal menghapus baris di Google Sheets: " + err.message);
-        if (btn) {
-          btn.innerText = "Hapus";
-          btn.disabled = false;
-        }
+        alert("Gagal menghapus: " + err.message);
       }
+      // Tanpa kirim ulang otomatis (agar tidak menghapus baris lain); selalu muat ulang agar tampilan sesuai sheet
+      await window.ambilDataGoogleSheet();
     };
 
     // --- BAGIAN 3: KONSULTASI KEARSIPAN ---
@@ -1352,9 +1397,7 @@
       if (LINK_FORM_KONSULTASI) window.open(LINK_FORM_KONSULTASI, "_blank");
     };
 
-    window.bukaSpreadsheetKonsultasi = function() {
-      window.open(`https://docs.google.com/spreadsheets/d/${SPREADSHEET_KONSULTASI_ID}/edit`, "_blank");
-    };
+    window.bukaSpreadsheetKonsultasi = function() { window.bukaSpreadsheet("konsul"); };
 
     // Baca tanggal dd/MM/yyyy atau yyyy-MM-dd dari teks
     function parseTglTeks(teks) {
@@ -1388,14 +1431,8 @@
       const tbody = document.getElementById("k-tabel-body");
       tbody.innerHTML = `<tr><td colspan="8" class="p-8 text-center text-slate-400">Mengambil data konsultasi kearsipan...</td></tr>`;
 
-      const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_KONSULTASI_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_KONSULTASI)}&headers=1&_=${Date.now()}`;
-
-      return fetch(url, { cache: "no-store" })
-        .then(res => res.text())
-        .then(txt => {
-          const json = JSON.parse(txt.substring(txt.indexOf("{"), txt.lastIndexOf("}") + 1));
-          if (json.status === "error") throw new Error(json.errors?.[0]?.detailed_message || "Sheet tidak ditemukan");
-
+      return panggilApi({ action: "baca", sumber: "konsul", sheet: SHEET_KONSULTASI, header: "1" })
+        .then(json => {
           const idxValid = [];
           const headersAsli = [];
           json.table.cols.forEach((c, i) => {
@@ -1428,8 +1465,8 @@
           tbody.innerHTML = `
             <tr>
               <td colspan="8" class="p-8 text-center text-rose-600 bg-rose-50">
-                Belum ada data, atau sheet <b>"${esc(SHEET_KONSULTASI)}"</b> tidak ditemukan di spreadsheet Konsultasi.<br>
-                <span class="text-[11px] text-slate-500">Periksa <b>SPREADSHEET_KONSULTASI_ID</b> dan <b>SHEET_KONSULTASI</b> di admin.html, dan pastikan akses spreadsheet Konsultasi: <b>"Siapa saja yang memiliki link sebagai Viewer/Pelihat"</b>.</span>
+                Gagal memuat sheet <b>"${esc(SHEET_KONSULTASI)}"</b>: ${esc(err && err.message)}<br>
+                <span class="text-[11px] text-slate-500">Periksa <b>SPREADSHEET_KONSULTASI_ID</b> dan <b>SHEET_KONSULTASI</b> di kode.gs, dan pastikan email Anda ada di <b>ADMIN_EMAILS</b>.</span>
               </td>
             </tr>`;
         });
@@ -1598,19 +1635,7 @@
       btn.disabled = true;
       btn.innerText = "Menyimpan...";
       try {
-        let hasil = null;
-        const body = new URLSearchParams(params);
-        try {
-          const res = await fetch(APPS_SCRIPT_URL, { method: "POST", body });
-          hasil = await res.json();
-        } catch (corsErr) {
-          // Cadangan: tanpa balasan (aman diulang karena hanya menimpa isi sel yang sama)
-          await fetch(APPS_SCRIPT_URL, { method: "POST", body, mode: "no-cors" });
-          await new Promise(r => setTimeout(r, 4000));
-        }
-        if (hasil && hasil.status !== "success") {
-          alert("Gagal menyimpan: " + (hasil.message || "kesalahan tidak diketahui"));
-        }
+        await panggilApi(params);
         await window.ambilDataKonsultasi();
       } catch (err) {
         alert("Gagal menyimpan konsultasi: " + err.message);
@@ -1626,26 +1651,15 @@
       if (btn) { btn.innerText = "Menghapus..."; btn.disabled = true; }
 
       const item = kDataMentah.find(x => x._row === barisSheet);
-      let url = `${APPS_SCRIPT_URL}?action=delkonsultasi&row=${barisSheet}&_=${Date.now()}`;
-      if (item && kNamaCol) url += `&nama=${encodeURIComponent(String(item[kNamaCol] || ""))}`;
+      const params = { action: "delkonsultasi", row: String(barisSheet) };
+      if (item && kNamaCol) params.nama = String(item[kNamaCol] || "");
 
       try {
-        let hasil = null;
-        try {
-          const res = await fetch(url, { method: "GET" });
-          hasil = await res.json();
-        } catch (corsErr) {
-          // Balasan tidak terbaca: jangan kirim ulang (bisa menghapus baris lain). Cukup tunggu lalu muat ulang.
-          await new Promise(r => setTimeout(r, 5000));
-        }
-        if (hasil && hasil.status !== "success") {
-          alert("Gagal menghapus: " + (hasil.message || "kesalahan tidak diketahui"));
-        }
-        await window.ambilDataKonsultasi();
+        await panggilApi(params);
       } catch (err) {
-        alert("Gagal menghapus data konsultasi: " + err.message);
-        if (btn) { btn.innerText = "Hapus"; btn.disabled = false; }
+        alert("Gagal menghapus: " + err.message); // tidak dikirim ulang otomatis
       }
+      await window.ambilDataKonsultasi();
     };
 
     window.unduhCSVKonsultasi = function() {
@@ -1712,9 +1726,7 @@
     window.bukaFormSurvei = function() {
       if (LINK_FORM_SURVEI) window.open(LINK_FORM_SURVEI, "_blank");
     };
-    window.bukaSpreadsheetSurvei = function() {
-      window.open(`https://docs.google.com/spreadsheets/d/${SPREADSHEET_KONSULTASI_ID}/edit`, "_blank");
-    };
+    window.bukaSpreadsheetSurvei = function() { window.bukaSpreadsheet("konsul"); };
 
     // Teks jawaban -> bentuk baku untuk dibandingkan
     function normOpsi(t) {
@@ -1853,14 +1865,8 @@
       document.getElementById("s-tabel-unsur-foot").innerHTML = "";
       document.getElementById("s-respon-body").innerHTML = `<tr><td colspan="18" class="p-8 text-center text-slate-400">Mengambil data survei...</td></tr>`;
 
-      const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_KONSULTASI_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(SHEET_SURVEI)}&headers=1&_=${Date.now()}`;
-
-      return fetch(url, { cache: "no-store" })
-        .then(res => res.text())
-        .then(txt => {
-          const json = JSON.parse(txt.substring(txt.indexOf("{"), txt.lastIndexOf("}") + 1));
-          if (json.status === "error") throw new Error(json.errors?.[0]?.detailed_message || "Sheet tidak ditemukan");
-
+      return panggilApi({ action: "baca", sumber: "konsul", sheet: SHEET_SURVEI, header: "1" })
+        .then(json => {
           const headers = json.table.cols.map(c => (c.label || "").trim());
           const p = petaKolomSurvei(headers);
           const tidakDikenali = new Set();
@@ -1926,7 +1932,7 @@
             <tr>
               <td colspan="18" class="p-8 text-center text-rose-600 bg-rose-50">
                 Belum ada data, atau sheet <b>"${esc(SHEET_SURVEI)}"</b> tidak ditemukan.<br>
-                <span class="text-[11px] text-slate-500">Periksa <b>SPREADSHEET_KONSULTASI_ID</b> dan <b>SHEET_SURVEI</b> di admin.html, dan pastikan akses spreadsheet: <b>"Siapa saja yang memiliki link sebagai Viewer/Pelihat"</b>.</span>
+                <span class="text-[11px] text-slate-500">Periksa <b>SPREADSHEET_KONSULTASI_ID</b> dan <b>SHEET_SURVEI</b> di kode.gs, dan pastikan email Anda ada di <b>ADMIN_EMAILS</b>.</span>
               </td>
             </tr>`;
           renderRingkasanSurvei(hitungSKM([]));
@@ -2128,25 +2134,12 @@
 
       const item = sData.find(x => x._row === barisSheet);
       // ts = penanda waktu respon: server menolak bila baris tersebut sudah bergeser/berubah
-      const url = `${APPS_SCRIPT_URL}?action=delsurvei&row=${barisSheet}&ts=${encodeURIComponent(item ? item._kunci : "")}&_=${Date.now()}`;
-
       try {
-        let hasil = null;
-        try {
-          const res = await fetch(url, { method: "GET" });
-          hasil = await res.json();
-        } catch (corsErr) {
-          // Balasan tidak terbaca: jangan kirim ulang (bisa menghapus baris lain). Cukup tunggu lalu muat ulang.
-          await new Promise(r => setTimeout(r, 5000));
-        }
-        if (hasil && hasil.status !== "success") {
-          alert("Gagal menghapus: " + (hasil.message || "kesalahan tidak diketahui"));
-        }
-        await window.ambilDataSurvei();
+        await panggilApi({ action: "delsurvei", row: String(barisSheet), ts: item ? item._kunci : "" });
       } catch (err) {
-        alert("Gagal menghapus respon survei: " + err.message);
-        if (btn) { btn.innerText = "Hapus"; btn.disabled = false; }
+        alert("Gagal menghapus: " + err.message); // tidak dikirim ulang otomatis
       }
+      await window.ambilDataSurvei();
     };
 
     function unduhCSV(csvString, namaFile) {
